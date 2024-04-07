@@ -1,4 +1,4 @@
-/*import React, { FC, useCallback } from "react";
+import React, { FC, useCallback } from "react";
 import {
   FlatList,
   ListRenderItemInfo,
@@ -32,10 +32,7 @@ const DeviceModalListItem: FC<DeviceModalListItemProps> = (props) => {
   }, [closeModal, connectToPeripheral, item.item]);
 
   return (
-    <TouchableOpacity
-      onPress={connectAndCloseModal}
-      style={modalStyle.ctaButton}
-    >
+    <TouchableOpacity onPress={connectAndCloseModal} style={modalStyle.ctaButton}>
       <Text style={modalStyle.ctaButtonText}>{item.item.name}</Text>
     </TouchableOpacity>
   );
@@ -45,7 +42,7 @@ const DeviceModal: FC<DeviceModalProps> = (props) => {
   const { devices, visible, connectToPeripheral, closeModal } = props;
 
   const renderDeviceModalListItem = useCallback(
-    (item: ListRenderItemInfo<Device>) => {
+    ( item: ListRenderItemInfo<Device>) => {
       return (
         <DeviceModalListItem
           item={item}
@@ -65,14 +62,15 @@ const DeviceModal: FC<DeviceModalProps> = (props) => {
       visible={visible}
     >
       <SafeAreaView style={modalStyle.modalTitle}>
-        <Text style={modalStyle.modalTitleText}>
-          Tap on a device to connect
-        </Text>
+        <Text style={modalStyle.modalTitleText}>Tap on a device to connect</Text>
         <FlatList
-          contentContainerStyle={modalStyle.modalFlatlistContiner}
+          contentContainerStyle={modalStyle.modalFlatlistContainer}
           data={devices}
           renderItem={renderDeviceModalListItem}
         />
+        <TouchableOpacity onPress={closeModal} style={modalStyle.closeButton}>
+          <Text style={modalStyle.closeButtonText}>Close</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     </Modal>
   );
@@ -83,28 +81,19 @@ const modalStyle = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f2f2f2",
   },
-  modalFlatlistContiner: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  modalCellOutline: {
-    borderWidth: 1,
-    borderColor: "black",
-    alignItems: "center",
-    marginHorizontal: 20,
-    paddingVertical: 15,
-    borderRadius: 8,
+  modalFlatlistContainer: {
+    flexGrow: 1,
   },
   modalTitle: {
     flex: 1,
     backgroundColor: "#f2f2f2",
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalTitleText: {
-    marginTop: 40,
     fontSize: 30,
     fontWeight: "bold",
-    marginHorizontal: 20,
-    textAlign: "center",
+    marginVertical: 20,
   },
   ctaButton: {
     backgroundColor: "#FF6060",
@@ -120,6 +109,21 @@ const modalStyle = StyleSheet.create({
     fontWeight: "bold",
     color: "white",
   },
+  closeButton: {
+    backgroundColor: "grey",
+    justifyContent: "center",
+    alignItems: "center",
+    height: 50,
+    marginHorizontal: 20,
+    marginTop: 40,
+    marginBottom: 10,
+    borderRadius: 8,
+  },
+  closeButtonText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "white",
+  },
 });
 
-export default DeviceModal; */
+export default DeviceModal;

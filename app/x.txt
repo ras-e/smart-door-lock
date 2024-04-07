@@ -1,47 +1,61 @@
-import React, { useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import DeviceModal from './components/DeviceModal';
+import { StatusBar } from 'expo-status-bar';  
 import useBLE from './components/useBLE';
+import { useState } from 'react';
+import DeviceModal from './components/DeviceConnectionModal';
+import {
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function App() {
-  const {
+   const {
     requestPermissions,
     scanForPeripherals,
-    connectToDevice,
-    disconnectFromDevice,
     allDevices,
+    connectToDevice,
     connectedDevice,
+    disconnectFromDevice,
   } = useBLE();
   
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
+
+  const scanForDevices = async () => {
+    const isPermissionsEnabled = await requestPermissions();
+    if (isPermissionsEnabled) {
+      scanForPeripherals();
+    }
+  };
 
   const hideModal = () => {
     setIsModalVisible(false);
   };
 
   const openModal = async () => {
-    await requestPermissions();
-    scanForPeripherals();
+    scanForDevices();
     setIsModalVisible(true);
   };
+
+
+
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.TitleWrapper}>
-
         {connectedDevice ? (
           <>
+            
             <Text style={styles.TitleText}>The door status is</Text>
             <Text style={styles.statusText}>Status</Text>
           </>
         ) : (
-
           <Text style={styles.TitleText}>
             Please Connect to a Smart lock
           </Text>
         )}
       </View>
-
       <TouchableOpacity
         onPress={connectedDevice ? disconnectFromDevice : openModal}
         style={styles.ctaButton}
@@ -50,7 +64,6 @@ export default function App() {
           {connectedDevice ? "Disconnect" : "Connect"}
         </Text>
       </TouchableOpacity>
-      
       <DeviceModal
         closeModal={hideModal}
         visible={isModalVisible}
@@ -60,6 +73,11 @@ export default function App() {
     </SafeAreaView>
   );
 };
+
+    // <View style={styles.container}>
+    //   <Text>Open up App.tsx to start working on your app!</Text>
+    //   <StatusBar style="auto" />
+    // </View>
 
 const styles = StyleSheet.create({
   container: {
@@ -88,7 +106,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     height: 50,
     marginHorizontal: 20,
-    marginBottom: 10,
+    marginBottom: 5,
     borderRadius: 8,
   },
   ctaButtonText: {
