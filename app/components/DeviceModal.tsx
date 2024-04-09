@@ -61,7 +61,7 @@ const DeviceModal: FC<DeviceModalProps> = (props) => {
       transparent={false}
       visible={visible}
     >
-      <SafeAreaView style={modalStyle.modalTitle}>
+      <SafeAreaView style={modalStyle.modalView}>
         <Text style={modalStyle.modalTitleText}>Tap on a device to connect</Text>
         <FlatList
           contentContainerStyle={modalStyle.modalFlatlistContainer}
@@ -83,18 +83,19 @@ const modalStyle = StyleSheet.create({
   },
   modalFlatlistContainer: {
     flexGrow: 1,
+    justifyContent: 'center'
   },
-  modalTitle: {
+
+  modalView: {
     flex: 1,
     backgroundColor: "#f2f2f2",
-    justifyContent: "center",
-    alignItems: "center",
   },
   modalTitleText: {
     fontSize: 30,
     fontWeight: "bold",
     marginVertical: 20,
   },
+
   ctaButton: {
     backgroundColor: "#FF6060",
     justifyContent: "center",
@@ -109,11 +110,13 @@ const modalStyle = StyleSheet.create({
     fontWeight: "bold",
     color: "white",
   },
+  
   closeButton: {
     backgroundColor: "grey",
     justifyContent: "center",
     alignItems: "center",
     height: 50,
+    width: 200,
     marginHorizontal: 20,
     marginTop: 40,
     marginBottom: 10,
