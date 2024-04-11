@@ -17,6 +17,8 @@ interface BluetoothLowEnergyApi {
 }
 
 function useBLE(): BluetoothLowEnergyApi {
+    //Device name, e.g., Smart Lock
+    const deviceName = ''
 
     const bleManager = useMemo(() => new BleManager(), []);
     const [allDevices, setAllDevices] = useState<Device[]>([]);
@@ -90,8 +92,8 @@ function useBLE(): BluetoothLowEnergyApi {
         console.log(error);
       }
 
-      //Working with our device name
-      if (device && device.name?.includes(' ')) {
+      //Device name reference
+      if (device && device.name?.includes(deviceName)) {
         setAllDevices((prevState: Device[]) => {
           if (!isDuplicteDevice(prevState, device)) {
             return [...prevState, device];
@@ -107,7 +109,7 @@ function useBLE(): BluetoothLowEnergyApi {
       setConnectedDevice(deviceConnection);
       await deviceConnection.discoverAllServicesAndCharacteristics();
       bleManager.stopDeviceScan();
-      //startStreamingData(deviceConnection);
+      //getData(deviceConnection);
     } catch (e) {
       console.log("FAILED TO CONNECT", e);
     }
