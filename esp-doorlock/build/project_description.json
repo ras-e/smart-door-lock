@@ -1,15 +1,15 @@
 {
     "version":            "1.1",
-    "project_name":       "hello_world",
-    "project_version":    "eab84d6-dirty",
+    "project_name":       "DoorLock",
+    "project_version":    "e7e7991-dirty",
     "project_path":       "C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock",
     "idf_path":           "C:/Espressif/frameworks/esp-idf-v5.2",
     "build_dir":          "C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build",
     "config_file":        "C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/sdkconfig",
     "config_defaults":    "",
     "bootloader_elf":     "C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build/bootloader/bootloader.elf",
-    "app_elf":            "hello_world.elf",
-    "app_bin":            "hello_world.bin",
+    "app_elf":            "DoorLock.elf",
+    "app_bin":            "DoorLock.bin",
     "build_type":         "flash_app",
     "git_revision":       "v5.2-dirty",
     "target":             "esp32",
@@ -805,7 +805,7 @@
             "managed_reqs": [],
             "managed_priv_reqs": [],
             "file": "C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build/esp-idf/main/libmain.a",
-            "sources": [ "C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/main/hello_world_main.c" ],
+            "sources": [ "C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/main/DoorLock.c" ],
             "include_dirs": []
         },
         "mbedtls": {

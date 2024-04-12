@@ -160,7 +160,7 @@ CMAKE_INSTALL_MANDIR:PATH=
 CMAKE_INSTALL_OLDINCLUDEDIR:PATH=/usr/include
 
 //Install path prefix, prepended onto install directories.
-CMAKE_INSTALL_PREFIX:PATH=C:/Program Files (x86)/hello_world
+CMAKE_INSTALL_PREFIX:PATH=C:/Program Files (x86)/DoorLock
 
 //Run-time variable data (LOCALSTATEDIR/run)
 CMAKE_INSTALL_RUNSTATEDIR:PATH=
@@ -216,7 +216,7 @@ CMAKE_PROJECT_DESCRIPTION:STATIC=
 CMAKE_PROJECT_HOMEPAGE_URL:STATIC=
 
 //Value Computed by CMake
-CMAKE_PROJECT_NAME:STATIC=hello_world
+CMAKE_PROJECT_NAME:STATIC=DoorLock
 
 //Path to a program.
 CMAKE_RANLIB:FILEPATH=C:/Espressif/tools/xtensa-esp-elf/esp-13.2.0_20230928/xtensa-esp-elf/bin/xtensa-esp32-elf-ranlib.exe
@@ -285,6 +285,15 @@ CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 
 //Disable package configuration, target export and installation
 DISABLE_PACKAGE_CONFIG_AND_INSTALL:BOOL=ON
+
+//Value Computed by CMake
+DoorLock_BINARY_DIR:STATIC=C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build
+
+//Value Computed by CMake
+DoorLock_IS_TOP_LEVEL:STATIC=ON
+
+//Value Computed by CMake
+DoorLock_SOURCE_DIR:STATIC=C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock
 
 //Build Mbed TLS programs.
 ENABLE_PROGRAMS:BOOL=
@@ -360,15 +369,6 @@ esp-idf_SOURCE_DIR:STATIC=C:/Espressif/frameworks/esp-idf-v5.2
 
 //Dependencies for the target
 everest_LIB_DEPENDS:STATIC=general;__idf_cxx;general;__idf_newlib;general;__idf_freertos;general;__idf_esp_hw_support;general;__idf_heap;general;__idf_log;general;__idf_soc;general;__idf_hal;general;__idf_esp_rom;general;__idf_esp_common;general;__idf_esp_system;general;__idf_xtensa;
-
-//Value Computed by CMake
-hello_world_BINARY_DIR:STATIC=C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build
-
-//Value Computed by CMake
-hello_world_IS_TOP_LEVEL:STATIC=ON
-
-//Value Computed by CMake
-hello_world_SOURCE_DIR:STATIC=C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock
 
 //Dependencies for the target
 mbedcrypto_LIB_DEPENDS:STATIC=general;__idf_cxx;general;__idf_newlib;general;__idf_freertos;general;__idf_esp_hw_support;general;__idf_heap;general;__idf_log;general;__idf_soc;general;__idf_hal;general;__idf_esp_rom;general;__idf_esp_common;general;__idf_esp_system;general;__idf_xtensa;general;everest;general;p256m;
@@ -588,7 +588,7 @@ HAVE_TIME_T_SIZE:INTERNAL=TRUE
 //CHECK_TYPE_SIZE: sizeof(time_t)
 TIME_T_SIZE:INTERNAL=8
 //CMAKE_INSTALL_PREFIX during last run
-_GNUInstallDirs_LAST_CMAKE_INSTALL_PREFIX:INTERNAL=C:/Program Files (x86)/hello_world
+_GNUInstallDirs_LAST_CMAKE_INSTALL_PREFIX:INTERNAL=C:/Program Files (x86)/DoorLock
 _Python3_EXECUTABLE:INTERNAL=C:/Espressif/python_env/idf5.2_py3.11_env/Scripts/python.exe
 //Python3 Properties
 _Python3_INTERPRETER_PROPERTIES:INTERNAL=Python;3;11;2;32;;;C:\Espressif\tools\idf-python\3.11.2\Lib;C:\Espressif\tools\idf-python\3.11.2\Lib;C:\Espressif\python_env\idf5.2_py3.11_env\Lib\site-packages;C:\Espressif\python_env\idf5.2_py3.11_env\Lib\site-packages

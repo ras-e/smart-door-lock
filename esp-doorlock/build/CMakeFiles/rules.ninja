@@ -6,7 +6,7 @@
 # It is included in the main 'build.ninja'.
 
 # =============================================================================
-# Project: hello_world
+# Project: DoorLock
 # Configurations: 
 # =============================================================================
 # =============================================================================
@@ -14,7 +14,7 @@
 #############################################
 # Rule for compiling C files.
 
-rule C_COMPILER__hello_world.2eelf_
+rule C_COMPILER__DoorLock.2eelf_
   depfile = $DEP_FILE
   deps = gcc
   command = ccache C:\Espressif\tools\xtensa-esp-elf\esp-13.2.0_20230928\xtensa-esp-elf\bin\xtensa-esp32-elf-gcc.exe $DEFINES $INCLUDES $FLAGS -MD -MT $out -MF $DEP_FILE -o $out -c $in
@@ -24,7 +24,7 @@ rule C_COMPILER__hello_world.2eelf_
 #############################################
 # Rule for linking CXX executable.
 
-rule CXX_EXECUTABLE_LINKER__hello_world.2eelf_
+rule CXX_EXECUTABLE_LINKER__DoorLock.2eelf_
   command = cmd.exe /C "$PRE_LINK && C:\Espressif\tools\xtensa-esp-elf\esp-13.2.0_20230928\xtensa-esp-elf\bin\xtensa-esp32-elf-g++.exe $FLAGS $LINK_FLAGS @$RSP_FILE -o $TARGET_FILE  && $POST_BUILD"
   description = Linking CXX executable $TARGET_FILE
   rspfile = $RSP_FILE

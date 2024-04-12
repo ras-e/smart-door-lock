@@ -11,7 +11,7 @@ C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build/CMa
 C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build/CMakeFiles/flash.dir
 C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build/CMakeFiles/encrypted-flash.dir
 C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build/CMakeFiles/_project_elf_src.dir
-C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build/CMakeFiles/hello_world.elf.dir
+C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build/CMakeFiles/DoorLock.elf.dir
 C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build/CMakeFiles/size.dir
 C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build/CMakeFiles/size-files.dir
 C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build/CMakeFiles/size-components.dir
