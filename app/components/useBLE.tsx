@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
-import { PermissionsAndroid, Platform } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { Alert, PermissionsAndroid, Platform } from "react-native";
 import {
+  BleError,
   BleManager,
   Device,
 } from "react-native-ble-plx";
+import base64 from 'react-native-base64';
 
 import * as ExpoDevice from "expo-device";
 
@@ -12,17 +14,27 @@ interface BluetoothLowEnergyApi {
     scanForPeripherals(): void;
     connectToDevice: (deviceId: Device) => Promise<void>;
     disconnectFromDevice: () => void;
+    monitorLockStatus(): void;
+   
+    
+    
+    
+   // doorStatus: string;
     connectedDevice: Device | null;
     allDevices: Device[];
 }
 
 function useBLE(): BluetoothLowEnergyApi {
     //Device name, e.g., Smart Lock
-    const deviceName = ''
+    const deviceName = '';
+    const LOCK_UUID = '';
+    const STATUS_CHAR = '';
 
     const bleManager = useMemo(() => new BleManager(), []);
     const [allDevices, setAllDevices] = useState<Device[]>([]);
     const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
+    const [doorStatus, setDoorStatus] = useState<string>("Unknown");
+
   
   const requestAndroid31Permissions = async () => {
 
@@ -83,7 +95,7 @@ function useBLE(): BluetoothLowEnergyApi {
   };
 
   //Check for duplicates in the list - plx does not always filter
-  const isDuplicteDevice = (devices: Device[], nextDevice: Device) =>
+  const isDuplicateDevice = (devices: Device[], nextDevice: Device) =>
     devices.findIndex((device) => nextDevice.id === device.id) > -1;
 
   const scanForPeripherals = () =>
@@ -95,7 +107,7 @@ function useBLE(): BluetoothLowEnergyApi {
       //Device name reference
       if (device && device.name?.includes(deviceName)) {
         setAllDevices((prevState: Device[]) => {
-          if (!isDuplicteDevice(prevState, device)) {
+          if (!isDuplicateDevice(prevState, device)) {
             return [...prevState, device];
           }
           return prevState;
@@ -108,19 +120,97 @@ function useBLE(): BluetoothLowEnergyApi {
       const deviceConnection = await bleManager.connectToDevice(device.id);
       setConnectedDevice(deviceConnection);
       await deviceConnection.discoverAllServicesAndCharacteristics();
+      //var data = await deviceConnection.discoverAllServicesAndCharacteristics();
+
       bleManager.stopDeviceScan();
       //getData(deviceConnection);
     } catch (e) {
       console.log("FAILED TO CONNECT", e);
+      Alert.alert("Connection Error", "Failed to connect to device");
     }
   };
 
+  useEffect(() => {
+        if (connectedDevice) {
+            const unsubscribe = monitorLockStatus();
+            return () => unsubscribe();
+        }
+    }, [connectedDevice]);
+
+  
+
+
   const disconnectFromDevice = () => {
     if (connectedDevice) {
-      bleManager.cancelDeviceConnection(connectedDevice.id);
-      setConnectedDevice(null);
+      bleManager.cancelDeviceConnection(connectedDevice.id).then(() => {
+        setConnectedDevice(null)
+        setDoorStatus("Disconnected")
+        
+      }).catch(e => {
+        console.error("Disconnect failed", e);
+      })
     }
   };
+
+  //Subscription on characteristics of device
+  // For battery utilization an option is read.. instead of monitor
+  const monitorLockStatus = () => {
+    if (connectedDevice) {
+      const subscription = connectedDevice.monitorCharacteristicForService(
+        LOCK_UUID,
+        STATUS_CHAR,
+          (error, characteristic) => {
+            if (error) {
+              console.error("Error monitoring lock status:", error);
+                return;
+              }
+              if (characteristic?.value) {
+                const decodedStatus = base64.decode(characteristic.value);
+                setDoorStatus(decodedStatus);
+              }
+          }
+      );
+      return () => subscription.remove();
+    }
+    return () => {};
+  };
+
+  //Alternative monitor with useEffect
+  // This useEffect is triggered whenever the connectedDevice state changes.
+ /*  useEffect(() => {
+      if (connectedDevice) {
+          const monitor = async () => {
+              try {
+                  // Subscribe to changes on a specific characteristic of the connected device.
+                  const subscription = await connectedDevice.monitorCharacteristicForService(
+                      LOCK_UUID,
+                      STATUS_CHAR,
+                      (error, characteristic) => {  // Callback function
+                          if (error) {
+                              console.error("Monitoring error:", error);
+                              return;
+                          }
+                          if (characteristic?.value) { // Valid value?
+                              const decodedStatus = base64.decode(characteristic.value);
+                              // Update the door status state with the new value from the device.
+                              setDoorStatus(decodedStatus);
+                          }
+                      }
+                  );
+                  // Cleanup
+                  return () => subscription.remove();
+              } catch (e) {
+                  console.error("Failed to subscribe", e);
+              }
+          };
+          const unsubscribe = monitor();
+          // Return a cleanup function from useEffect, which ensures that the subscription is 
+          // removed when the connectedDevice changes state
+          return () => {
+              unsubscribe.then(remove => remove());
+          };
+      }
+  }, [connectedDevice]); */
 
   return {
     scanForPeripherals,
@@ -129,6 +219,7 @@ function useBLE(): BluetoothLowEnergyApi {
     allDevices,
     connectedDevice,
     disconnectFromDevice,
+    monitorLockStatus,
   };
 
 }
