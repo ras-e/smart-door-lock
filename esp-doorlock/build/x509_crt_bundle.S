@@ -1,4 +1,4 @@
-/* * Data converted from C:/Users/tobbe/OneDrive/Skrivebord/test/build/esp-idf/mbedtls/x509_crt_bundle
+/* * Data converted from C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build/esp-idf/mbedtls/x509_crt_bundle
  */
 .data
 .section .rodata.embedded

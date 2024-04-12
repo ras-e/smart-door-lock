@@ -1,4 +1,4 @@
-# Install script for directory: C:/Users/tobbe/OneDrive/Skrivebord/test/main
+# Install script for directory: C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/main
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
