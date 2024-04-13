@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import DeviceModal from './components/DeviceModal';
 import useBLE from './components/useBLE';
+import LockButton from './components/LockButton';
 
 export default function App() {
   const {
@@ -33,6 +34,9 @@ export default function App() {
           <>
             <Text style={styles.TitleText}>The door status is</Text>
             <Text style={styles.statusText}>Status</Text>
+             <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <LockButton />
+    </SafeAreaView>
           </>
         ) : (
 
@@ -44,7 +48,7 @@ export default function App() {
 
       <TouchableOpacity
         onPress={connectedDevice ? disconnectFromDevice : openModal}
-        style={styles.ctaButton}
+        style={connectedDevice ? styles.ctaButtonDisconnect : styles.ctaButtonConnect}
       >
         <Text style={styles.ctaButtonText}>
           {connectedDevice ? "Disconnect" : "Connect"}
@@ -64,25 +68,27 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f2f2f2",
+    backgroundColor: "#000",
   },
   TitleWrapper: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    padding: 60
   },
   TitleText: {
     fontSize: 30,
     fontWeight: "bold",
     textAlign: "center",
     marginHorizontal: 20,
-    color: "black",
+    color: "white",
   },
   statusText: {
     fontSize: 25,
     marginTop: 15,
+    color: "white"
   },
-  ctaButton: {
+  ctaButtonDisconnect: {
     backgroundColor: "#FF6060",
     justifyContent: "center",
     alignItems: "center",
@@ -91,9 +97,20 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 8,
   },
+    ctaButtonConnect: {
+    backgroundColor: "#50C878",
+    justifyContent: "center",
+    alignItems: "center",
+    height: 50,
+    marginHorizontal: 20,
+    marginBottom: 10,
+    borderRadius: 8,
+  },
+  
   ctaButtonText: {
     fontSize: 18,
     fontWeight: "bold",
     color: "white",
   },
+ 
 });

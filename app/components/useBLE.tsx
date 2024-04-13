@@ -14,7 +14,7 @@ interface BluetoothLowEnergyApi {
     scanForPeripherals(): void;
     connectToDevice: (deviceId: Device) => Promise<void>;
     disconnectFromDevice: () => void;
-    monitorLockStatus(): void;
+   // monitorLockStatus(): void;
    
     
     
@@ -27,7 +27,7 @@ interface BluetoothLowEnergyApi {
 function useBLE(): BluetoothLowEnergyApi {
     //Device name, e.g., Smart Lock
     const deviceName = '';
-    const LOCK_UUID = '';
+    const LOCK_UUID = '5BC80EC4-C256-4817-A214-7C7752918BD0';
     const STATUS_CHAR = '';
 
     const bleManager = useMemo(() => new BleManager(), []);
@@ -129,14 +129,14 @@ function useBLE(): BluetoothLowEnergyApi {
       Alert.alert("Connection Error", "Failed to connect to device");
     }
   };
-
+/*
   useEffect(() => {
         if (connectedDevice) {
             const unsubscribe = monitorLockStatus();
             return () => unsubscribe();
         }
     }, [connectedDevice]);
-
+*/
   
 
 
@@ -154,7 +154,7 @@ function useBLE(): BluetoothLowEnergyApi {
 
   //Subscription on characteristics of device
   // For battery utilization an option is read.. instead of monitor
-  const monitorLockStatus = () => {
+  /*const monitorLockStatus = () => {
     if (connectedDevice) {
       const subscription = connectedDevice.monitorCharacteristicForService(
         LOCK_UUID,
@@ -173,7 +173,8 @@ function useBLE(): BluetoothLowEnergyApi {
       return () => subscription.remove();
     }
     return () => {};
-  };
+  }; 
+  */
 
   //Alternative monitor with useEffect
   // This useEffect is triggered whenever the connectedDevice state changes.
@@ -219,7 +220,7 @@ function useBLE(): BluetoothLowEnergyApi {
     allDevices,
     connectedDevice,
     disconnectFromDevice,
-    monitorLockStatus,
+    //monitorLockStatus,
   };
 
 }

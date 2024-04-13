@@ -79,17 +79,21 @@ const DeviceModal: FC<DeviceModalProps> = (props) => {
 const modalStyle = StyleSheet.create({
   modalContainer: {
     flex: 1,
-    backgroundColor: "#f2f2f2",
+    backgroundColor: "#ffff",
   },
   modalFlatlistContainer: {
     flexGrow: 1,
-    justifyContent: 'center'
+    justifyContent: 'center',
+    alignItems: 'center'
   },
 
   modalView: {
     flex: 1,
-    backgroundColor: "#f2f2f2",
+    backgroundColor: "#000",
+    alignItems: 'center',
+    justifyContent: 'center'
   },
+  
   modalTitleText: {
     fontSize: 30,
     fontWeight: "bold",
@@ -97,14 +101,17 @@ const modalStyle = StyleSheet.create({
   },
 
   ctaButton: {
-    backgroundColor: "#FF6060",
+    backgroundColor: "#068998",
     justifyContent: "center",
     alignItems: "center",
     height: 50,
     marginHorizontal: 20,
     marginBottom: 5,
     borderRadius: 8,
+    width: 250,
+
   },
+
   ctaButtonText: {
     fontSize: 18,
     fontWeight: "bold",
@@ -112,7 +119,7 @@ const modalStyle = StyleSheet.create({
   },
   
   closeButton: {
-    backgroundColor: "grey",
+    backgroundColor: "#E53935",
     justifyContent: "center",
     alignItems: "center",
     height: 50,
