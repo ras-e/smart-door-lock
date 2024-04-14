@@ -13,7 +13,7 @@ interface BluetoothLowEnergyApi {
     requestPermissions(): Promise<boolean>;
     scanForPeripherals(): void;
     connectToDevice: (deviceId: Device) => Promise<void>;
-    disconnectFromDevice: () => void;
+    V2disconnectFromDevice: () => void;
    // monitorLockStatus(): void;
    
     
@@ -27,7 +27,7 @@ interface BluetoothLowEnergyApi {
 function useBLE(): BluetoothLowEnergyApi {
     //Device name, e.g., Smart Lock
     const deviceName = '';
-    const LOCK_UUID = '5BC80EC4-C256-4817-A214-7C7752918BD0';
+    const LOCK_UUID = '';
     const STATUS_CHAR = '';
 
     const bleManager = useMemo(() => new BleManager(), []);
@@ -105,7 +105,7 @@ function useBLE(): BluetoothLowEnergyApi {
       }
 
       //Device name reference
-      if (device && device.name?.includes(deviceName)) {
+      if (device && device.name?.includes('')) {
         setAllDevices((prevState: Device[]) => {
           if (!isDuplicateDevice(prevState, device)) {
             return [...prevState, device];
@@ -122,7 +122,7 @@ function useBLE(): BluetoothLowEnergyApi {
       await deviceConnection.discoverAllServicesAndCharacteristics();
       //var data = await deviceConnection.discoverAllServicesAndCharacteristics();
 
-      bleManager.stopDeviceScan();
+      await bleManager.stopDeviceScan();
       //getData(deviceConnection);
     } catch (e) {
       console.log("FAILED TO CONNECT", e);
@@ -140,7 +140,7 @@ function useBLE(): BluetoothLowEnergyApi {
   
 
 
-  const disconnectFromDevice = () => {
+/*   const disconnectFromDevice = () => {
     if (connectedDevice) {
       bleManager.cancelDeviceConnection(connectedDevice.id).then(() => {
         setConnectedDevice(null)
@@ -150,7 +150,22 @@ function useBLE(): BluetoothLowEnergyApi {
         console.error("Disconnect failed", e);
       })
     }
-  };
+  }; */
+  //V2 with bleManager.isDeviceConnected, also performs a check on protocol level
+  const V2disconnectFromDevice = async () => {
+  if (connectedDevice && await bleManager.isDeviceConnected(connectedDevice.id)) {
+    try {
+      await bleManager.cancelDeviceConnection(connectedDevice.id);
+      setConnectedDevice(null);
+      setDoorStatus("Disconnected");
+    } catch (error) {
+      console.error("Disconnect failed", error);
+      Alert.alert("Disconnect Error", "Failed to disconnect from device");
+    }
+  } else {
+    console.warn("Attempted to disconnect but device is not connected");
+  }
+};
 
   //Subscription on characteristics of device
   // For battery utilization an option is read.. instead of monitor
@@ -219,7 +234,7 @@ function useBLE(): BluetoothLowEnergyApi {
     connectToDevice,
     allDevices,
     connectedDevice,
-    disconnectFromDevice,
+    V2disconnectFromDevice,
     //monitorLockStatus,
   };
 

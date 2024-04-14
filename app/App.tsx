@@ -9,7 +9,7 @@ export default function App() {
     requestPermissions,
     scanForPeripherals,
     connectToDevice,
-    disconnectFromDevice,
+    V2disconnectFromDevice,
     allDevices,
     connectedDevice,
   } = useBLE();
@@ -47,7 +47,7 @@ export default function App() {
       </View>
 
       <TouchableOpacity
-        onPress={connectedDevice ? disconnectFromDevice : openModal}
+        onPress={connectedDevice ? V2disconnectFromDevice : openModal}
         style={connectedDevice ? styles.ctaButtonDisconnect : styles.ctaButtonConnect}
       >
         <Text style={styles.ctaButtonText}>
