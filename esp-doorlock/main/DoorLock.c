@@ -3,48 +3,74 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
-//#include "esp_bt.h"
+#include <BLEDevice.h>
+#include <BLEUtils.h>
+#include <BLEServer.h>
+#include <BLE2902.h>
 
-#define DELAY (200 / portTICK_PERIOD_MS)
-#define PIN (2)
+#define BLE_SERVICE_UUID        "91bad492-b950-4226-aa2b-4ede9fa42f59"
+#define BLE_CHARACTERISTIC_UUID "cba1d466-344c-4be3-ab3f-189f80dd7518"
+
+// GPIO pin definitions
+#define RED_LED_PIN 2     // Red LED for Locked state
+#define GREEN_LED_PIN 15  // Green LED for Unlocked state
 
 enum State {
     Locked,
-    Opening,
-    Open,
-    Locking
+    Unlocked
 };
 
-void TaskBlink (void *pvParameters)
-{
-    enum State state = Locked; 
-    uint8_t pinState = 0;
-    while(1) {
-        switch (state) {
-            case Locked:
-                pinState = 0;
-                gpio_set_level(PIN, pinState);
-                vTaskDelay(DELAY);
-                state = Opening; 
-                break;
-            case Opening:
-                state = Open;
-                break;
-            case Open:
-                pinState = 1;
-                gpio_set_level(PIN, pinState);
-                vTaskDelay(DELAY);
-                state = Locking;
-                break;
-            case Locking:
-                state = Locked; 
-                break; 
+State lockState = Locked;
+
+// Setup callbacks for BLE events
+class MyCallbacks: public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic *pCharacteristic) {
+        std::string value = pCharacteristic->getValue();
+        if (value == "unlock") {
+            lockState = Unlocked;
+        } else if (value == "lock") {
+            lockState = Locked;
         }
     }
+};
+
+void setupBLE() {
+    BLEDevice::init("SmartLock");
+    BLEServer *pServer = BLEDevice::createServer();
+    BLEService *pService = pServer->createService(BLE_SERVICE_UUID);
+    BLECharacteristic *pCharacteristic = pService->createCharacteristic(
+                                         BLE_CHARACTERISTIC_UUID,
+                                         BLECharacteristic::PROPERTY_READ | 
+                                         BLECharacteristic::PROPERTY_WRITE |
+                                         BLECharacteristic::PROPERTY_NOTIFY
+                                       );
+    pCharacteristic->setCallbacks(new MyCallbacks());
+    pCharacteristic->setValue("Locked");
+    pService->start();
+
+    BLEAdvertising *pAdvertising = pServer->getAdvertising();
+    pAdvertising->addServiceUUID(BLE_SERVICE_UUID);
+    pAdvertising->start();
 }
 
-void app_main (void) {
-    gpio_reset_pin(PIN);
-    gpio_set_direction(PIN, GPIO_MODE_OUTPUT);
-    xTaskCreate(TaskBlink, "Blink", 4096, NULL, 1, NULL);
+void setupGPIO() {
+    gpio_reset_pin(RED_LED_PIN);
+    gpio_set_direction(RED_LED_PIN, GPIO_MODE_OUTPUT);
+    gpio_reset_pin(GREEN_LED_PIN);
+    gpio_set_direction(GREEN_LED_PIN, GPIO_MODE_OUTPUT);
+}
+
+void app_main() {
+    setupBLE();
+    setupGPIO();
+    while(1) {
+        if (lockState == Locked) {
+            gpio_set_level(RED_LED_PIN, 1);    // Turn on RED LED
+            gpio_set_level(GREEN_LED_PIN, 0);  // Turn off GREEN LED
+        } else if (lockState == Unlocked) {
+            gpio_set_level(RED_LED_PIN, 0);    // Turn off RED LED
+            gpio_set_level(GREEN_LED_PIN, 1);  // Turn on GREEN LED
+        }
+        vTaskDelay(pdMS_TO_TICKS(1000)); // Delay to reduce CPU usage
+    }
 }
