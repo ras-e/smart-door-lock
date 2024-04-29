@@ -53,8 +53,25 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
                                         esp_gatt_if_t gatts_if,
                                         esp_ble_gatts_cb_param_t *param);
 
-static void gap_event_handler(esp_gap_ble_cb_event_t event,
-                              esp_ble_gap_cb_param_t *param);
+static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) {
+    switch (event) {
+        case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
+            esp_ble_gap_start_advertising(&adv_params);
+            break;
+        case ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT:
+            // Handle scan response data set complete event
+            break;
+        case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
+            // Check if advertising started successfully
+            if (param->adv_start_cmpl.status != ESP_BT_STATUS_SUCCESS) {
+                ESP_LOGE(DEVICE_NAME, "Advertising start failed");
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 
 void set_lock_state(bool lock) {
     lock_state = lock ? LOCKED : UNLOCKED;
