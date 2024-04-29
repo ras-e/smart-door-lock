@@ -18,16 +18,6 @@
 #define GREEN_LED_PIN 15
 #define DEVICE_NAME "SmartLock"
 
-#define PREPARE_BUF_MAX_SIZE 1024
-
-static uint8_t adv_config_done = 0;
-static uint8_t raw_adv_data[] = {
-    /* Flags */
-    0x02, 0x01, 0x06,
-    /* Complete List of 16-bit Service Class UUIDs */
-    0x03, 0x03, 0xFF, 0x00 
-};
-
 static esp_ble_adv_params_t adv_params = {
     .adv_int_min       = 0x20,
     .adv_int_max       = 0x40,
@@ -37,21 +27,10 @@ static esp_ble_adv_params_t adv_params = {
     .adv_filter_policy = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
 };
 
-typedef struct {
-    uint8_t *prepare_buf;
-    int      prepare_len;
-} prepare_type_env_t;
-
-static prepare_type_env_t prepare_write_env;
-
 enum {
     LOCKED,
     UNLOCKED
 } lock_state;
-
-static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
-                                        esp_gatt_if_t gatts_if,
-                                        esp_ble_gatts_cb_param_t *param);
 
 static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) {
     switch (event) {
@@ -59,19 +38,16 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
             esp_ble_gap_start_advertising(&adv_params);
             break;
         case ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT:
-            // Handle scan response data set complete event
             break;
         case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
-            // Check if advertising started successfully
             if (param->adv_start_cmpl.status != ESP_BT_STATUS_SUCCESS) {
-                ESP_LOGE(DEVICE_NAME, "Advertising start failed");
+                ESP_LOGE(DEVICE_NAME, "Advertising start failed: %d", param->adv_start_cmpl.status);
             }
             break;
         default:
             break;
     }
 }
-
 
 void set_lock_state(bool lock) {
     lock_state = lock ? LOCKED : UNLOCKED;
@@ -87,9 +63,9 @@ static void esp_gatts_cb(esp_gatts_cb_event_t event,
     case ESP_GATTS_WRITE_EVT:
         if (!param->write.is_prep) {
             if (param->write.value[0] == 0x00) {
-                set_lock_state(true);  // Lock
+                set_lock_state(true);
             } else if (param->write.value[0] == 0x01) {
-                set_lock_state(false); // Unlock
+                set_lock_state(false);
             }
         }
         break;
@@ -122,7 +98,6 @@ void app_main(void) {
     esp_ble_gap_register_callback(gap_event_handler);
     esp_ble_gatts_register_callback(esp_gatts_cb);
 
-    // Initialize LEDs
     gpio_reset_pin(RED_LED_PIN);
     gpio_set_direction(RED_LED_PIN, GPIO_MODE_OUTPUT);
     gpio_reset_pin(GREEN_LED_PIN);
