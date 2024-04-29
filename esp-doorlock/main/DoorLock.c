@@ -32,12 +32,20 @@ enum {
     UNLOCKED
 } lock_state;
 
+static uint8_t adv_data[] = {
+    0x02, // Length of Flags
+    ESP_BLE_AD_TYPE_FLAG, // Type of Flags
+    ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_BREDR_NOT_SPT,
+    0x03, // Length of Service UUID
+    ESP_BLE_AD_TYPE_16SRV_CMPL, // Complete list of 16-bit Service UUIDs
+    (uint8_t) (GATTS_SERVICE_UUID), // Service UUID
+    (uint8_t) (GATTS_SERVICE_UUID >> 8)
+};
+
 static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) {
     switch (event) {
-        case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
+        case ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT:
             esp_ble_gap_start_advertising(&adv_params);
-            break;
-        case ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT:
             break;
         case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
             if (param->adv_start_cmpl.status != ESP_BT_STATUS_SUCCESS) {
@@ -56,16 +64,14 @@ void set_lock_state(bool lock) {
     ESP_LOGI(DEVICE_NAME, "Lock state: %s", lock ? "LOCKED" : "UNLOCKED");
 }
 
-static void esp_gatts_cb(esp_gatts_cb_event_t event, 
-                         esp_gatt_if_t gatts_if, 
-                         esp_ble_gatts_cb_param_t *param) {
+static void esp_gatts_cb(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param) {
     switch (event) {
     case ESP_GATTS_WRITE_EVT:
         if (!param->write.is_prep) {
             if (param->write.value[0] == 0x00) {
-                set_lock_state(true);
+                set_lock_state(true);  // Lock
             } else if (param->write.value[0] == 0x01) {
-                set_lock_state(false);
+                set_lock_state(false); // Unlock
             }
         }
         break;
@@ -89,7 +95,8 @@ void app_main(void) {
     ret = esp_bt_controller_enable(ESP_BT_MODE_BLE);
     ESP_ERROR_CHECK(ret);
 
-    ret = esp_bluedroid_init();
+    esp_bluedroid_cfg_t bluedroid_cfg = {0};
+    ret = esp_bluedroid_init_with_cfg(&bluedroid_cfg);
     ESP_ERROR_CHECK(ret);
 
     ret = esp_bluedroid_enable();
@@ -97,6 +104,9 @@ void app_main(void) {
 
     esp_ble_gap_register_callback(gap_event_handler);
     esp_ble_gatts_register_callback(esp_gatts_cb);
+
+    // Set the raw advertising data
+    esp_ble_gap_config_adv_data_raw(adv_data, sizeof(adv_data));
 
     gpio_reset_pin(RED_LED_PIN);
     gpio_set_direction(RED_LED_PIN, GPIO_MODE_OUTPUT);
