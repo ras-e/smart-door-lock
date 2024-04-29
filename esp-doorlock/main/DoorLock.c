@@ -48,6 +48,8 @@ static uint8_t scan_rsp_data[] = {
     'S', 'm', 'a', 'r', 't', 'L', 'o', 'c', 'k', ' ', 'G', 'r', 'o', 'u', 'p', ' ', '1', '5'
 };
 
+//hello world 
+
 static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) {
     switch (event) {
         case ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT:
