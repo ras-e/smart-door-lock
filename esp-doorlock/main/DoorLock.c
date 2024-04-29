@@ -64,7 +64,9 @@ void set_lock_state(bool lock) {
     ESP_LOGI(DEVICE_NAME, "Lock state: %s", lock ? "LOCKED" : "UNLOCKED");
 }
 
-static void esp_gatts_cb(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param) {
+static void esp_gatts_cb(esp_gatts_cb_event_t event, 
+                         esp_gatt_if_t gatts_if, 
+                         esp_ble_gatts_cb_param_t *param) {
     switch (event) {
     case ESP_GATTS_WRITE_EVT:
         if (!param->write.is_prep) {
@@ -95,7 +97,8 @@ void app_main(void) {
     ret = esp_bt_controller_enable(ESP_BT_MODE_BLE);
     ESP_ERROR_CHECK(ret);
 
-    esp_bluedroid_cfg_t bluedroid_cfg = {0};
+    // Correct type for bluedroid configuration
+    esp_bluedroid_config_t bluedroid_cfg = {};
     ret = esp_bluedroid_init_with_cfg(&bluedroid_cfg);
     ESP_ERROR_CHECK(ret);
 
