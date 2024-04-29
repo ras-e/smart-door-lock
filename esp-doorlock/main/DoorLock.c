@@ -16,7 +16,7 @@
 
 #define RED_LED_PIN 2
 #define GREEN_LED_PIN 15
-#define DEVICE_NAME "SmartLock"
+#define DEVICE_NAME "SmartLock group 15"
 
 static esp_ble_adv_params_t adv_params = {
     .adv_int_min       = 0x20,
