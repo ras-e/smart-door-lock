@@ -42,10 +42,19 @@ static uint8_t adv_data[] = {
     (uint8_t) (GATTS_SERVICE_UUID >> 8)
 };
 
+static uint8_t scan_rsp_data[] = {
+    0x11,   // Length of this data
+    ESP_BLE_AD_TYPE_NAME_CMPL, // Complete name
+    'S', 'm', 'a', 'r', 't', 'L', 'o', 'c', 'k', ' ', 'G', 'r', 'o', 'u', 'p', ' ', '1', '5'
+};
+
 static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) {
     switch (event) {
         case ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT:
-            esp_ble_gap_start_advertising(&adv_params);
+            esp_ble_gap_config_scan_rsp_data_raw(scan_rsp_data, sizeof(scan_rsp_data));  // Configure scan response data
+            break;
+        case ESP_GAP_BLE_SCAN_RSP_DATA_RAW_SET_COMPLETE_EVT:
+            esp_ble_gap_start_advertising(&adv_params); // Start advertising after scan response is set
             break;
         case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
             if (param->adv_start_cmpl.status != ESP_BT_STATUS_SUCCESS) {
@@ -97,7 +106,6 @@ void app_main(void) {
     ret = esp_bt_controller_enable(ESP_BT_MODE_BLE);
     ESP_ERROR_CHECK(ret);
 
-    // Correct type for bluedroid configuration
     esp_bluedroid_config_t bluedroid_cfg = {};
     ret = esp_bluedroid_init_with_cfg(&bluedroid_cfg);
     ESP_ERROR_CHECK(ret);
