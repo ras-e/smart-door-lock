@@ -2,43 +2,48 @@ import { useEffect, useMemo, useState } from "react";
 import { Alert, PermissionsAndroid, Platform } from "react-native";
 import {
   BleError,
-  BleManager,
+  BleErrorCode,
+  Characteristic,
   Device,
 } from "react-native-ble-plx";
-import base64 from 'react-native-base64';
+import base64 from "react-native-base64";
+import { ble_manager } from "./ble_manager";
 
 import * as ExpoDevice from "expo-device";
 
 interface BluetoothLowEnergyApi {
-    requestPermissions(): Promise<boolean>;
-    scanForPeripherals(): void;
-    connectToDevice: (deviceId: Device) => Promise<void>;
-    V2disconnectFromDevice: () => void;
-   // monitorLockStatus(): void;
-   
-    
-    
-    
-   // doorStatus: string;
-    connectedDevice: Device | null;
-    allDevices: Device[];
+  requestPermissions(): Promise<boolean>;
+  scanForPeripherals(): void;
+  connectToDevice: (deviceId: Device) => Promise<void>;
+  V3disconnectFromDevice: () => void;
+  // monitorLockStatus(): void;
+
+  connectedDevice: Device | null;
+
+  doorStatus: string;
+
+  allDevices: Device[];
 }
 
 function useBLE(): BluetoothLowEnergyApi {
-    //Device name, e.g., Smart Lock
-    const deviceName = '';
-    const LOCK_UUID = '';
-    const STATUS_CHAR = '';
+  const bleManager = ble_manager;
+  //const bleManager = useMemo(() => new BleManager(), []);
 
-    const bleManager = useMemo(() => new BleManager(), []);
-    const [allDevices, setAllDevices] = useState<Device[]>([]);
-    const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
-    const [doorStatus, setDoorStatus] = useState<string>("Unknown");
+  //Device name, e.g., Smart Lock
+  const deviceName = "";
+  // UUID's for CUSTOM UUID
+   const LOCK_UUID = "00001111-0000-1000-8000-00805F9B34FB";
+   const CHAR = "00002222-0000-1000-8000-00805F9B34FB";
 
-  
+
+  const [allDevices, setAllDevices] = useState<Device[]>([]);
+  const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
+  const [doorStatus, setDoorStatus] = useState<string>("Unknown");
+
+  let intervalHandle: ReturnType<typeof setTimeout>;
+
   const requestAndroid31Permissions = async () => {
-
-    const bluetoothScanPermission = await PermissionsAndroid.request( 
+    const bluetoothScanPermission = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
       {
         title: "Location Permission",
@@ -46,6 +51,12 @@ function useBLE(): BluetoothLowEnergyApi {
         buttonPositive: "OK",
       }
     );
+    console.log(
+      `BLUETOOTH_SCAN permission granted: ${
+        bluetoothScanPermission === PermissionsAndroid.RESULTS.GRANTED
+      }`
+    );
+
     const bluetoothConnectPermission = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
       {
@@ -54,6 +65,12 @@ function useBLE(): BluetoothLowEnergyApi {
         buttonPositive: "OK",
       }
     );
+    console.log(
+      `BLUETOOTH_CONNECT permission granted: ${
+        bluetoothConnectPermission === PermissionsAndroid.RESULTS.GRANTED
+      }`
+    );
+
     const fineLocationPermission = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
       {
@@ -61,6 +78,11 @@ function useBLE(): BluetoothLowEnergyApi {
         message: "Bluetooth Low Energy requires Location",
         buttonPositive: "OK",
       }
+    );
+    console.log(
+      `fineLocationPermission permission granted: ${
+        fineLocationPermission === PermissionsAndroid.RESULTS.GRANTED
+      }`
     );
 
     return (
@@ -72,7 +94,15 @@ function useBLE(): BluetoothLowEnergyApi {
 
   const requestPermissions = async () => {
     //Need to check Android API level
+    console.log("Requesting permissions");
+    if (Platform.OS === "ios") {
+      return true;
+    }
+
     if (Platform.OS === "android") {
+      console.log(
+        `Detected Android API level: ${ExpoDevice.platformApiLevel ?? -1}`
+      );
       if ((ExpoDevice.platformApiLevel ?? -1) < 31) {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
@@ -82,7 +112,10 @@ function useBLE(): BluetoothLowEnergyApi {
             buttonPositive: "OK",
           }
         );
-        return granted === PermissionsAndroid.RESULTS.GRANTED;
+        const result = granted === PermissionsAndroid.RESULTS.GRANTED;
+        console.log(`ACCESS_FINE_LOCATION permission granted: ${result}`);
+        return result;
+        //return granted === PermissionsAndroid.RESULTS.GRANTED;
       } else {
         const isAndroid31PermissionsGranted =
           await requestAndroid31Permissions();
@@ -98,14 +131,15 @@ function useBLE(): BluetoothLowEnergyApi {
   const isDuplicateDevice = (devices: Device[], nextDevice: Device) =>
     devices.findIndex((device) => nextDevice.id === device.id) > -1;
 
-  const scanForPeripherals = () =>
+  const scanForPeripherals = () => {
+    console.log("starts to scan");
     bleManager.startDeviceScan(null, null, (error, device) => {
       if (error) {
         console.log(error);
       }
 
       //Device name reference
-      if (device && device.name?.includes('')) {
+      if (device && device.name?.includes(deviceName)) {
         setAllDevices((prevState: Device[]) => {
           if (!isDuplicateDevice(prevState, device)) {
             return [...prevState, device];
@@ -114,119 +148,124 @@ function useBLE(): BluetoothLowEnergyApi {
         });
       }
     });
+  };
 
   const connectToDevice = async (device: Device) => {
     try {
+      console.log(`Attempting to connect to device with ID: ${device.id}`);
+      console.log(`Service UUID: ${LOCK_UUID}`);
+      console.log(`Characteristic UUID: ${CHAR}`);
+      //Pairs the device
       const deviceConnection = await bleManager.connectToDevice(device.id);
-      setConnectedDevice(deviceConnection);
-      await deviceConnection.discoverAllServicesAndCharacteristics();
-      //var data = await deviceConnection.discoverAllServicesAndCharacteristics();
+      console.log(`Connected to device with ID: ${deviceConnection.id}`);
 
+      setConnectedDevice(deviceConnection);
+      console.log("connectedToDevice" + connectedDevice?.id);
+
+      console.log(
+        `Discovered services and characteristics for device with ID: ${deviceConnection.id}`
+      );
+  
+      //Discover
+      await deviceConnection.discoverAllServicesAndCharacteristics();
+
+      // Util function - to be moved
+      const services = await deviceConnection.services();
+
+      const serviceUUIDs = services.map(service => service.uuid).join(", ");
+      console.log("Service UUIDs: " + serviceUUIDs);
+
+      if (services.length > 0) {
+        const service = services.find((s) => s.uuid === LOCK_UUID);
+        if (service) {
+          const characteristics = await service.characteristics();
+          const characteristicUUIDs = characteristics
+            .map((c) => c.uuid)
+            .join(", ");
+          console.log(
+            "Characteristic UUIDs for " + LOCK_UUID + ": " + characteristicUUIDs
+          );
+        } else {
+          console.log("No service found with UUID: " + LOCK_UUID);
+        }
+      }
+      //Stop device scan
       await bleManager.stopDeviceScan();
-      //getData(deviceConnection);
+      console.log("Device scan stopped after connection.");
+
+      console.log("device connected");
+      console.log("fetched first time");
+      V2fetchData(deviceConnection);
+
+      clearInterval(intervalHandle);
+      console.log("Cleared any existing interval.");
+
+      intervalHandle = setInterval(() => {
+        //console.log("Interval tick for device:", device.id);
+        V2fetchData(deviceConnection);
+      }, 5000);
+      console.log("New interval set");
     } catch (e) {
       console.log("FAILED TO CONNECT", e);
       Alert.alert("Connection Error", "Failed to connect to device");
     }
   };
-/*
-  useEffect(() => {
-        if (connectedDevice) {
-            const unsubscribe = monitorLockStatus();
-            return () => unsubscribe();
-        }
-    }, [connectedDevice]);
-*/
-  
 
 
-/*   const disconnectFromDevice = () => {
+  const V3disconnectFromDevice = () => {
     if (connectedDevice) {
-      bleManager.cancelDeviceConnection(connectedDevice.id).then(() => {
-        setConnectedDevice(null)
-        setDoorStatus("Disconnected")
-        
-      }).catch(e => {
-        console.error("Disconnect failed", e);
-      })
+      console.log("Disconnection initiated for device ID:", connectedDevice.id);
+      bleManager.cancelDeviceConnection(connectedDevice.id);
+      setConnectedDevice(null); // Update state immediately
+      clearInterval(intervalHandle);
     }
-  }; */
-  //V2 with bleManager.isDeviceConnected, also performs a check on protocol level
-  const V2disconnectFromDevice = async () => {
-  if (connectedDevice && await bleManager.isDeviceConnected(connectedDevice.id)) {
-    try {
-      await bleManager.cancelDeviceConnection(connectedDevice.id);
-      setConnectedDevice(null);
-      setDoorStatus("Disconnected");
-    } catch (error) {
-      console.error("Disconnect failed", error);
-      Alert.alert("Disconnect Error", "Failed to disconnect from device");
-    }
-  } else {
-    console.warn("Attempted to disconnect but device is not connected");
-  }
-};
+  };
 
-  //Subscription on characteristics of device
-  // For battery utilization an option is read.. instead of monitor
-  /*const monitorLockStatus = () => {
-    if (connectedDevice) {
-      const subscription = connectedDevice.monitorCharacteristicForService(
-        LOCK_UUID,
-        STATUS_CHAR,
-          (error, characteristic) => {
-            if (error) {
-              console.error("Error monitoring lock status:", error);
-                return;
-              }
-              if (characteristic?.value) {
-                const decodedStatus = base64.decode(characteristic.value);
-                setDoorStatus(decodedStatus);
-              }
+  const handleResponse = (response: Characteristic | null) => {
+    if (!response?.value) {
+      console.log("error");
+    } else {
+      const decodedValue = base64.decode(response.value);
+      console.log("Received data:", decodedValue);
+      return;
+    }
+  };
+
+  const V2fetchData = async (device: Device) => {
+    if (device) {
+      console.log(device.id);
+      console.log(connectedDevice?.id);
+      let response = device.readCharacteristicForService(LOCK_UUID, CHAR);
+      try {
+        console.log(`Fetching data from device with ID: ${device.id}`);
+        console.log(`Service UUID: ${LOCK_UUID}`);
+        console.log(`Characteristic UUID: ${CHAR}`);
+        let value = await response;
+        handleResponse(value);
+
+      } catch (e) {
+        if (e instanceof BleError) {
+          if (e.errorCode === BleErrorCode.DeviceNotConnected) {
+            console.log("disconnected status");
+
+            try {
+              V3disconnectFromDevice();
+            } catch (e) {
+              console.log("error", e);
+            }
+          } else if (e.errorCode === BleErrorCode.DeviceDisconnected) {
+            setDoorStatus("Device disconnected: " + e);
+          } else {
+            setDoorStatus("Unknown BLE Error: " + e);
           }
-      );
-      return () => subscription.remove();
-    }
-    return () => {};
-  }; 
-  */
-
-  //Alternative monitor with useEffect
-  // This useEffect is triggered whenever the connectedDevice state changes.
- /*  useEffect(() => {
-      if (connectedDevice) {
-          const monitor = async () => {
-              try {
-                  // Subscribe to changes on a specific characteristic of the connected device.
-                  const subscription = await connectedDevice.monitorCharacteristicForService(
-                      LOCK_UUID,
-                      STATUS_CHAR,
-                      (error, characteristic) => {  // Callback function
-                          if (error) {
-                              console.error("Monitoring error:", error);
-                              return;
-                          }
-                          if (characteristic?.value) { // Valid value?
-                              const decodedStatus = base64.decode(characteristic.value);
-                              // Update the door status state with the new value from the device.
-                              setDoorStatus(decodedStatus);
-                          }
-                      }
-                  );
-                  // Cleanup
-                  return () => subscription.remove();
-              } catch (e) {
-                  console.error("Failed to subscribe", e);
-              }
-          };
-          const unsubscribe = monitor();
-          // Return a cleanup function from useEffect, which ensures that the subscription is 
-          // removed when the connectedDevice changes state
-          return () => {
-              unsubscribe.then(remove => remove());
-          };
+        } else if (e instanceof Error) {
+          console.log("Error:", e.message);
+        } else {
+          console.log("An unexpected error occurred");
+        }
       }
-  }, [connectedDevice]); */
+    }
+  };
 
   return {
     scanForPeripherals,
@@ -234,10 +273,10 @@ function useBLE(): BluetoothLowEnergyApi {
     connectToDevice,
     allDevices,
     connectedDevice,
-    V2disconnectFromDevice,
+    V3disconnectFromDevice,
     //monitorLockStatus,
+    doorStatus,
   };
-
 }
 
 export default useBLE;

@@ -1,19 +1,25 @@
-import React, { useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import DeviceModal from './components/DeviceModal';
-import useBLE from './components/useBLE';
-import LockButton from './components/LockButton';
+import React, { useState } from "react";
+import {
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import DeviceModal from "./components/DeviceModal";
+import useBLE from "./components/useBLE";
+import LockButton from "./components/LockButton";
 
 export default function App() {
   const {
     requestPermissions,
     scanForPeripherals,
     connectToDevice,
-    V2disconnectFromDevice,
+    V3disconnectFromDevice,
     allDevices,
     connectedDevice,
   } = useBLE();
-  
+
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
 
   const hideModal = () => {
@@ -29,32 +35,36 @@ export default function App() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.TitleWrapper}>
-
         {connectedDevice ? (
           <>
             <Text style={styles.TitleText}>The door status is</Text>
             <Text style={styles.statusText}>Status</Text>
-             <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <LockButton />
-    </SafeAreaView>
+            <SafeAreaView
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <LockButton />
+            </SafeAreaView>
           </>
         ) : (
-
-          <Text style={styles.TitleText}>
-            Please Connect to a Smart lock
-          </Text>
+          <Text style={styles.TitleText}>Please Connect to a Smart lock</Text>
         )}
       </View>
 
       <TouchableOpacity
-        onPress={connectedDevice ? V2disconnectFromDevice : openModal}
-        style={connectedDevice ? styles.ctaButtonDisconnect : styles.ctaButtonConnect}
+        onPress={connectedDevice ? V3disconnectFromDevice : openModal}
+        style={
+          connectedDevice ? styles.ctaButtonDisconnect : styles.ctaButtonConnect
+        }
       >
         <Text style={styles.ctaButtonText}>
           {connectedDevice ? "Disconnect" : "Connect"}
         </Text>
       </TouchableOpacity>
-      
+
       <DeviceModal
         closeModal={hideModal}
         visible={isModalVisible}
@@ -63,7 +73,7 @@ export default function App() {
       />
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -74,7 +84,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 60
+    padding: 60,
   },
   TitleText: {
     fontSize: 30,
@@ -86,7 +96,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 25,
     marginTop: 15,
-    color: "white"
+    color: "white",
   },
   ctaButtonDisconnect: {
     backgroundColor: "#FF6060",
@@ -97,7 +107,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 8,
   },
-    ctaButtonConnect: {
+  ctaButtonConnect: {
     backgroundColor: "#50C878",
     justifyContent: "center",
     alignItems: "center",
@@ -106,11 +116,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 8,
   },
-  
+
   ctaButtonText: {
     fontSize: 18,
     fontWeight: "bold",
     color: "white",
   },
- 
 });
