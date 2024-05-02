@@ -32,7 +32,10 @@ const DeviceModalListItem: FC<DeviceModalListItemProps> = (props) => {
   }, [closeModal, connectToPeripheral, item.item]);
 
   return (
-    <TouchableOpacity onPress={connectAndCloseModal} style={modalStyle.ctaButton}>
+    <TouchableOpacity
+      onPress={connectAndCloseModal}
+      style={modalStyle.ctaButton}
+    >
       <Text style={modalStyle.ctaButtonText}>{item.item.name}</Text>
     </TouchableOpacity>
   );
@@ -42,7 +45,7 @@ const DeviceModal: FC<DeviceModalProps> = (props) => {
   const { devices, visible, connectToPeripheral, closeModal } = props;
 
   const renderDeviceModalListItem = useCallback(
-    ( item: ListRenderItemInfo<Device>) => {
+    (item: ListRenderItemInfo<Device>) => {
       return (
         <DeviceModalListItem
           item={item}
@@ -62,7 +65,9 @@ const DeviceModal: FC<DeviceModalProps> = (props) => {
       visible={visible}
     >
       <SafeAreaView style={modalStyle.modalView}>
-        <Text style={modalStyle.modalTitleText}>Tap on a device to connect</Text>
+        <Text style={modalStyle.modalTitleText}>
+          Tap on a device to connect
+        </Text>
         <FlatList
           contentContainerStyle={modalStyle.modalFlatlistContainer}
           data={devices}
@@ -83,17 +88,17 @@ const modalStyle = StyleSheet.create({
   },
   modalFlatlistContainer: {
     flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center'
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   modalView: {
     flex: 1,
     backgroundColor: "#000",
-    alignItems: 'center',
-    justifyContent: 'center'
+    alignItems: "center",
+    justifyContent: "center",
   },
-  
+
   modalTitleText: {
     fontSize: 30,
     fontWeight: "bold",
@@ -109,7 +114,6 @@ const modalStyle = StyleSheet.create({
     marginBottom: 5,
     borderRadius: 8,
     width: 250,
-
   },
 
   ctaButtonText: {
@@ -117,7 +121,7 @@ const modalStyle = StyleSheet.create({
     fontWeight: "bold",
     color: "white",
   },
-  
+
   closeButton: {
     backgroundColor: "#E53935",
     justifyContent: "center",
