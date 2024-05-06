@@ -391,6 +391,7 @@ C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build/esp
 C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build/esp-idf/esp_wifi/CMakeFiles/install.dir
 C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build/esp-idf/esp_wifi/CMakeFiles/install/local.dir
 C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build/esp-idf/esp_wifi/CMakeFiles/install/strip.dir
+C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build/esp-idf/bt/CMakeFiles/__idf_bt.dir
 C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build/esp-idf/bt/CMakeFiles/edit_cache.dir
 C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build/esp-idf/bt/CMakeFiles/rebuild_cache.dir
 C:/Users/tobbe/OneDrive/Dokumenter/GitHub/smart-door-lock/esp-doorlock/build/esp-idf/bt/CMakeFiles/list_install_components.dir
