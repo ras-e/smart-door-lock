@@ -35,7 +35,18 @@ void ledcAnalogWrite(uint8_t channel, uint32_t value, uint32_t valueMax = 255) {
   // write duty to LEDC
   ledcWrite(channel, duty);
 }
+/*
+class MyServerCallbacks: public BLEServerCallbacks {
+    void onConnect(BLEServer* pServer) {
+        Serial.println("Client Connected");
+    };
 
+    void onDisconnect(BLEServer* pServer) {
+        Serial.println("Client Disconnected");
+        BLEDevice::startAdvertising();  // Restart advertising after disconnection
+    }
+};
+*/
 
 enum State {
     LOCKED,
@@ -52,7 +63,7 @@ void setup() {
   ledcSetup(LEDC_CHANNEL_0, LEDC_BASE_FREQ, LEDC_TIMER_12_BIT);
   ledcAttachPin(LED_PIN, LEDC_CHANNEL_0);
 
-  BLEDevice::init("BLUETOOTHGROUP15");
+  BLEDevice::init("VIRUS_PLEASE_CONNECT");
   BLEServer *pServer = BLEDevice::createServer();
   BLEService *pService = pServer->createService(SERVICE_UUID);
   BLECharacteristic *pCharacteristic = pService->createCharacteristic(
@@ -61,7 +72,7 @@ void setup() {
                                          BLECharacteristic::PROPERTY_WRITE
                                        );
 
-  pCharacteristic->setValue("Hello World says Neil");
+  pCharacteristic->setValue("Saa skal der bare laases!");
   pService->start();
   // BLEAdvertising *pAdvertising = pServer->getAdvertising();  // this still is working for backward compatibility
   BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
