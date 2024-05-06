@@ -2,6 +2,24 @@
 #include <BLEUtils.h>
 #include <BLEServer.h>
 
+class MyCallbacks : public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic *pCharacteristic) {
+        std::string value = pCharacteristic->getValue();
+        if (!value.empty()) {
+            Serial.println("Received command: " + String(value.c_str()));
+            if (value == "LOCK") {
+                state = LOCKED;
+            } else if (value == "OPENING") {
+                state = OPENING;
+            } else if (value == "OPEN") {
+                state = OPEN;
+            } else if (value == "LOCKING") {
+                state = LOCKING;
+            }
+        }
+    }
+};
+
 #define SERVICE_UUID                "6f340e06-add8-495c-9da4-ce8558771834"
 #define CHARACTERISTIC_UUID         "beb5483e-36e1-4688-b7f5-ea07361b26a8"
 #define HEARTBEAT_CHARACTERISTIC_UUID "feedc0de-0000-0000-0000-000000000000"
