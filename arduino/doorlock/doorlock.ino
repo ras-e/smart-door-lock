@@ -16,6 +16,9 @@
 // use first channel of 16 channels (started from zero)
 #define LEDC_CHANNEL_0     0
 
+BLECharacteristic* pCharacteristic = NULL;
+BLEServer* pServer = NULL;
+
 // use 12 bit precission for LEDC timer
 #define LEDC_TIMER_12_BIT  12
 
@@ -23,7 +26,7 @@
 #define LEDC_BASE_FREQ     5000
 
 int brightness = 0;    // how bright the LED is
-int fadeAmount = 5;    // how many points to fade the LED byint brightness = 0;    // how bright the LED is
+std::string userInput = "";
 
 // fade LED PIN (replace with LED_BUILTIN constant for built-in LED)
 #define LED_PIN            2 
@@ -35,18 +38,20 @@ void ledcAnalogWrite(uint8_t channel, uint32_t value, uint32_t valueMax = 255) {
   // write duty to LEDC
   ledcWrite(channel, duty);
 }
-/*
-class MyServerCallbacks: public BLEServerCallbacks {
+
+bool deviceConnected = false;
+bool oldDeviceConnected = false;
+
+class MyServerCallbacks : public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
-        Serial.println("Client Connected");
+        deviceConnected = true;
     };
 
     void onDisconnect(BLEServer* pServer) {
-        Serial.println("Client Disconnected");
-        BLEDevice::startAdvertising();  // Restart advertising after disconnection
+        deviceConnected = false;
     }
 };
-*/
+
 
 enum State {
     LOCKED,
@@ -64,9 +69,10 @@ void setup() {
   ledcAttachPin(LED_PIN, LEDC_CHANNEL_0);
 
   BLEDevice::init("VIRUS_PLEASE_CONNECT");
-  BLEServer *pServer = BLEDevice::createServer();
+  pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new MyServerCallbacks());
   BLEService *pService = pServer->createService(SERVICE_UUID);
-  BLECharacteristic *pCharacteristic = pService->createCharacteristic(
+ pCharacteristic = pService->createCharacteristic(
                                          CHARACTERISTIC_UUID,
                                          BLECharacteristic::PROPERTY_READ |
                                          BLECharacteristic::PROPERTY_WRITE
@@ -86,40 +92,61 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  
-  switch (state) {
-    case LOCKED:
-      brightness = 0;
+  if (deviceConnected) {
+    //1 open, 2 lock
+    userInput = pCharacteristic->getValue();
+    if (userInput == "OPEN" && state == LOCKED) {
       state = OPENING;
-      break;
-    case OPENING:
+      brightness = 50;
+      userInput = "";
+    } else if (state == OPENING) {
+      //TODO add timer to if
       state = OPEN;
-      brightness = 50;
-      break;
-    case OPEN:
-      state = LOCKING;
       brightness = 255;
-      break;
-    case LOCKING:
-      state = LOCKED;
+    } else if (userInput == "LOCK" && state == OPEN) {
+      state = LOCKING;
       brightness = 50;
-      break;
+      userInput = "";
+    } else if (state == LOCKING) {
+      brightness = 0;
+      state = LOCKED;
+    }
+    
+    /*
+    switch (state) {
+      case LOCKED:
+        brightness = 0;
+        state = OPENING;
+        break;
+      case OPENING:
+        state = OPEN;
+        brightness = 50;
+        break;
+      case OPEN:
+        state = LOCKING;
+        brightness = 255;
+        break;
+      case LOCKING:
+        state = LOCKED;
+        brightness = 50;
+        break;
+    }
+    */
+    ledcAnalogWrite(LEDC_CHANNEL_0, brightness);
+    delay(3000);
   }
   
-  //brightness = 50;
-  // set the brightness on LEDC channel 0
-  ledcAnalogWrite(LEDC_CHANNEL_0, brightness);
-
-  // change the brightness for next time through the loop:
-  //brightness = brightness + fadeAmount;
-  /*
-  // reverse the direction of the fading at the ends of the fade:
-  if (brightness <= 0 || brightness >= 255) {
-    fadeAmount = -fadeAmount;
+    // disconnecting
+  if (!deviceConnected && oldDeviceConnected) {
+    delay(500);
+    pServer->startAdvertising();
+    oldDeviceConnected = deviceConnected;
+    Serial.println("Start advertising");
   }
-  */
-  
+  // connecting
+  if (deviceConnected && !oldDeviceConnected) {
+    oldDeviceConnected = deviceConnected;
+    Serial.println("Device Connected");
+  }
 
-  // wait for 30 milliseconds to see the dimming effect
-  delay(5000);
 }
