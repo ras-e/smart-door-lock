@@ -1,0 +1,61 @@
+
+  //Subscription on characteristics of device
+  // For battery utilization an option is read.. instead of monitor
+  /*const monitorLockStatus = () => {
+    if (connectedDevice) {
+      const subscription = connectedDevice.monitorCharacteristicForService(
+        LOCK_UUID,
+        STATUS_CHAR,
+          (error, characteristic) => {
+            if (error) {
+              console.error("Error monitoring lock status:", error);
+                return;
+              }
+              if (characteristic?.value) {
+                const decodedStatus = base64.decode(characteristic.value);
+                setDoorStatus(decodedStatus);
+              }
+          }
+      );
+      return () => subscription.remove();
+    }
+    return () => {};
+  }; 
+  */
+
+  //Alternative monitor with useEffect
+  // This useEffect is triggered whenever the connectedDevice state changes.
+  /*  useEffect(() => {
+      if (connectedDevice) {
+          const monitor = async () => {
+              try {
+                  // Subscribe to changes on a specific characteristic of the connected device.
+                  const subscription = await connectedDevice.monitorCharacteristicForService(
+                      LOCK_UUID,
+                      STATUS_CHAR,
+                      (error, characteristic) => {  // Callback function
+                          if (error) {
+                              console.error("Monitoring error:", error);
+                              return;
+                          }
+                          if (characteristic?.value) { // Valid value?
+                              const decodedStatus = base64.decode(characteristic.value);
+                              // Update the door status state with the new value from the device.
+                              setDoorStatus(decodedStatus);
+                          }
+                      }
+                  );
+                  // Cleanup
+                  return () => subscription.remove();
+              } catch (e) {
+                  console.error("Failed to subscribe", e);
+              }
+          };
+          const unsubscribe = monitor();
+          // Return a cleanup function from useEffect, which ensures that the subscription is 
+          // removed when the connectedDevice changes state
+          return () => {
+              unsubscribe.then(remove => remove());
+          };
+      }
+  }, [connectedDevice]); */
