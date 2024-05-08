@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  Alert,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -7,7 +8,7 @@ import {
   View,
 } from "react-native";
 import DeviceModal from "./components/DeviceModal";
-import useBLE from "./components/useBLE";
+import useBLE from "./components/useBLE2";
 import LockButton from "./components/LockButton";
 
 export default function App() {
@@ -21,17 +22,49 @@ export default function App() {
   } = useBLE();
 
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (connectedDevice) {
+      console.log("Device connected with ID: ", connectedDevice.id);
+    } else {
+      console.log("No device is connected.");
+    }
+  }, [connectedDevice]);
+
+  useEffect(() => {
+    console.log("Connected Device Changed:", connectedDevice?.id);
+    setIsLoading(false); // Stop loading indicator when device state changes
+    if (connectedDevice) {
+      setIsModalVisible(false); // Ensure modal is closed when a device is connected
+    }
+  }, [connectedDevice]);
 
   const hideModal = () => {
     setIsModalVisible(false);
   };
 
-  const openModal = async () => {
+  /*   const openModal = async () => {
     await requestPermissions();
     scanForPeripherals();
     setIsModalVisible(true);
   };
+ */
 
+  const openModal = async () => {
+    setIsLoading(true);
+    const isPermissionsEnabled = await requestPermissions();
+    if (isPermissionsEnabled) {
+      scanForPeripherals();
+      setIsModalVisible(true);
+    } else {
+      Alert.alert(
+        "Permission Error",
+        "Bluetooth permissions are required to connect devices."
+      );
+    }
+    setIsLoading(false);
+  };
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.TitleWrapper}>
