@@ -8,7 +8,6 @@ import {
 } from "react-native-ble-plx";
 import base64 from "react-native-base64";
 import { ble_manager } from "./ble_manager";
-
 import * as ExpoDevice from "expo-device";
 
 interface BluetoothLowEnergyApi {
@@ -32,8 +31,11 @@ function useBLE(): BluetoothLowEnergyApi {
 
   // UUID's for CUSTOM UUID 0000181C-0000-1000-8000-00805F9B34FB
 
-  const LOCK_UUID = "0000180D-0000-1000-8000-00805F9B34FB";
-  const CHAR = "00002A38-0000-1000-8000-00805F9B34FB";
+/*   const LOCK_UUID = "0000180D-0000-1000-8000-00805F9B34FB";
+  const CHAR = "00002A38-0000-1000-8000-00805F9B34FB"; */
+
+  const LOCK_UUID = "6f340e06-add8-495c-9da4-ce8558771834";
+  const CHAR = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
   const [allDevices, setAllDevices] = useState<Device[]>([]);
   const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
@@ -47,9 +49,8 @@ function useBLE(): BluetoothLowEnergyApi {
 
   let intervalHandle: ReturnType<typeof setTimeout>;
 
-const delay = (ms: number | undefined) =>
+  const delay = (ms: number | undefined) =>
     new Promise((resolve) => setTimeout(resolve, ms));
-
 
   const requestAndroid31Permissions = async () => {
     const bluetoothScanPermission = await PermissionsAndroid.request(
@@ -147,7 +148,7 @@ const delay = (ms: number | undefined) =>
         console.log(error);
       }
 
-      //Device name reference
+      //DeviceName reference
       if (device && device.name?.includes(deviceName)) {
         setAllDevices((prevState: Device[]) => {
           if (!isDuplicateDevice(prevState, device)) {
@@ -159,51 +160,50 @@ const delay = (ms: number | undefined) =>
     });
   };
 
-
-const connectToDevice = async (device: Device) => {
-  try {
-    clearInterval(intervalHandle); // Ensure any existing interval is cleared before starting a new connection attempt
-    const deviceConnection = await bleManager.connectToDevice(device.id);
-    if (!deviceConnection) {
-      console.error("Failed to connect to device:", device.id);
-      return; // Exit if no device connection could be established
-    }
-    setConnectedDevice(deviceConnection);
-    console.log("device connection set");
-    await deviceConnection.discoverAllServicesAndCharacteristics();
-    bleManager.stopDeviceScan(); // Stop scanning as soon as a connection is established
-    console.log("stopped scanning");
-
-    console.log("--Fetched first time--");
-    fetchDoorData(deviceConnection); // Initial fetch
-
-    intervalHandle = setInterval(async () => {
-      const isConnected = await bleManager.isDeviceConnected(device.id);
-      if (isConnected) {
-        console.log("Current device state: " + isConnected);
-        console.log("Fetching data...");
-        //fetchDoorData(deviceConnection); // Use the direct deviceConnection reference here
-        if (connectedDeviceRef.current) {
-          fetchDoorData(connectedDeviceRef.current); // Use the ref here
-        }
-      } else {
-        console.log("Device not connected. Stopping attempts to fetch data.");
-        clearInterval(intervalHandle); // Clear the interval as soon as the device is not connected
-        if (connectedDeviceRef.current) {
-          // Check if the disconnection was unexpected
-
-          console.log("Attempting to reconnect...");
-          await delay(5000); // Wait for 5 seconds before reconnecting
-          connectToDevice(device);
-        }
+  const connectToDevice = async (device: Device) => {
+    try {
+      clearInterval(intervalHandle); // Ensure any existing interval is cleared before starting a new connection attempt
+      const deviceConnection = await bleManager.connectToDevice(device.id);
+      if (!deviceConnection) {
+        console.error("Failed to connect to device:", device.id);
+        return; // Exit if no device connection could be established
       }
-    }, 1000);
-  } catch (e) {
-    console.error("Failed to connect:", e);
-    setConnectedDevice(null); // Ensure the state is cleared on connection failure
-  }
-};
+      setConnectedDevice(deviceConnection);
+      console.log("device connection set");
+      await deviceConnection.discoverAllServicesAndCharacteristics();
+      bleManager.stopDeviceScan(); // Stop scanning as soon as a connection is established
+      console.log("stopped scanning");
 
+      console.log("--Fetched first time--");
+      fetchDoorData(deviceConnection); // Initial fetch
+
+      intervalHandle = setInterval(async () => {
+        const isConnected = await bleManager.isDeviceConnected(device.id);
+        if (isConnected) {
+          console.log("Current device state: " + isConnected);
+          console.log("Fetching data...");
+          //fetchDoorData(deviceConnection); // Use the direct deviceConnection reference here
+          if (connectedDeviceRef.current) {
+            fetchDoorData(connectedDeviceRef.current); // Use the ref here
+          }
+        } else {
+          console.log("Device not connected. Stopping attempts to fetch data.");
+          clearInterval(intervalHandle); // Clear the interval as soon as the device is not connected
+          if (connectedDeviceRef.current) {
+            // Check if the disconnection was unexpected
+
+            console.log("Attempting to reconnect...");
+            setDoorStatus("Attempting to reconnect...");
+            await delay(5000); // Wait for 5 seconds before reconnecting
+            connectToDevice(device);
+          }
+        }
+      }, 1000);
+    } catch (e) {
+      console.error("Failed to connect:", e);
+      setConnectedDevice(null); // Ensure the state is cleared on connection failure
+    }
+  };
 
   const V3disconnectFromDevice = () => {
     if (connectedDeviceRef.current) {
@@ -231,15 +231,13 @@ const connectToDevice = async (device: Device) => {
 
     const doorIsOpen = rawData.charCodeAt(0) == 0x01;
 
-    setDoorStatus(doorIsOpen ? "Unlocked" : "Locked");
+    //setDoorStatus(doorIsOpen ? "Unlocked" : "Locked");
+    setDoorStatus(rawData);
   };
 
   const fetchDoorData = async (device: Device) => {
     if (device) {
-      let char = device.readCharacteristicForService(
-        LOCK_UUID,
-        CHAR,
-      );
+      let char = device.readCharacteristicForService(LOCK_UUID, CHAR);
       try {
         let c = await char;
         handleResponse(c);
@@ -264,6 +262,8 @@ const connectToDevice = async (device: Device) => {
       }
     }
   };
+
+
 
   return {
     scanForPeripherals,

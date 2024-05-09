@@ -10,7 +10,7 @@ const LockButton = () => {
     // Start the animation
     Animated.timing(borderColor, {
       toValue: isLocked ? 1 : 0,
-      duration: 800,
+      duration: 500,
       useNativeDriver: false,
     }).start();
 

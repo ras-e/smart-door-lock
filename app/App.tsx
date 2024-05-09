@@ -19,6 +19,7 @@ export default function App() {
     V3disconnectFromDevice,
     allDevices,
     connectedDevice,
+    doorStatus,
   } = useBLE();
 
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
@@ -33,7 +34,7 @@ export default function App() {
   }, [connectedDevice]);
 
   useEffect(() => {
-    console.log("Connected Device Changed:", connectedDevice?.id);
+    console.log("Connected Device Changed:", connectedDevice);
     setIsLoading(false); // Stop loading indicator when device state changes
     if (connectedDevice) {
       setIsModalVisible(false); // Ensure modal is closed when a device is connected
@@ -65,13 +66,16 @@ export default function App() {
     }
     setIsLoading(false);
   };
+
+
+  
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.TitleWrapper}>
         {connectedDevice ? (
           <>
             <Text style={styles.TitleText}>The door status is</Text>
-            <Text style={styles.statusText}>Status</Text>
+            <Text style={styles.statusText}>{doorStatus}</Text>
             <SafeAreaView
               style={{
                 flex: 1,
