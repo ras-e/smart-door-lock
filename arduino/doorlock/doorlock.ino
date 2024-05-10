@@ -1,22 +1,27 @@
 #include <BLEDevice.h>
-#include <BLEServer.h>
 #include <BLEUtils.h>
-#include <BLE2902.h>
+#include <BLEServer.h>
 
-BLEServer* pServer = NULL;
-BLECharacteristic* pSensorCharacteristic = NULL;
-BLECharacteristic* pStateCharacteristic = NULL;
-BLECharacteristic* pLedCharacteristic = NULL;
-bool deviceConnected = false;
-bool oldDeviceConnected = false;
-uint32_t value = 0;
+// Constants for the LED control
+#define LEDC_BASE_FREQ     5000       // PWM base frequency
+#define LEDC_TIMER_12_BIT  12         // PWM resolution (12 bits)
 
-const int ledPin = 2; // Use the appropriate GPIO pin for your setup
-
+// UUIDs for the BLE service and characteristic
 #define SERVICE_UUID        "6f340e06-add8-495c-9da4-ce8558771834"
-#define SENSOR_CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
-#define LED_CHARACTERISTIC_UUID "19b10002-e8f2-537e-4f6c-d104768a1214"
-#define STATE_CHARACTERISTIC_UUID "fab2345e-36e1-4688-b7f5-ff0001234567"
+#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+
+// GPIO pins for the RGB LED
+#define RED_PIN   27
+#define GREEN_PIN 26
+#define BLUE_PIN  25
+
+// LEDC channels for PWM control
+#define LEDC_CHANNEL_RED   1
+#define LEDC_CHANNEL_GREEN 2
+#define LEDC_CHANNEL_BLUE  3
+
+BLECharacteristic* pCharacteristic = NULL;
+BLEServer* pServer = NULL;
 
 enum State {
     LOCKED,
@@ -25,115 +30,103 @@ enum State {
     LOCKING
 };
 
-State lockState = LOCKED;
+State state = LOCKED;
+bool deviceConnected = false;
+bool oldDeviceConnected = false;
 
-class MyServerCallbacks : public BLEServerCallbacks {
-    void onConnect(BLEServer* pServer) {
-        deviceConnected = true;
-    };
+// Function to control LED brightness
+void ledcAnalogWrite(uint8_t channel, uint32_t value, uint32_t valueMax = 255) {
+    uint32_t duty = (4095 / valueMax) * min(value, valueMax);
+    ledcWrite(channel, duty);
+}
 
-    void onDisconnect(BLEServer* pServer) {
-        deviceConnected = false;
-    }
-};
-
-class MyStateCharacteristicCallbacks : public BLECharacteristicCallbacks {
-    void onWrite(BLECharacteristic* pCharacteristic) {
+// Callback class for BLE characteristic
+class MyCallbacks: public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic *pCharacteristic) {
         std::string value = pCharacteristic->getValue();
-        if (!value.empty()) {
-            int newState = value[0] - '0';
-            if(newState >= LOCKED && newState <= LOCKING) {
-                lockState = static_cast<State>(newState);
-                Serial.println("State updated to: " + String(newState));
-                updateLED();
+        if (value.length() > 0) {
+            Serial.print("Received Value: ");
+            Serial.println(value.c_str());
+            Serial.print("Current State: ");
+            Serial.println(state);
+            if (value == "OPEN" && state == LOCKED) {
+                state = OPENING;
+                // Transition to OPEN after some time or immediately for demonstration
+                state = OPEN;
+                ledcAnalogWrite(LEDC_CHANNEL_RED, 255); // Full brightness for demonstration
+                ledcAnalogWrite(LEDC_CHANNEL_GREEN, 0);
+                ledcAnalogWrite(LEDC_CHANNEL_BLUE, 0);
+                Serial.println("Transitioned to OPEN state.");
+            } else if (value == "LOCK" && state == OPEN) {
+                state = LOCKING;
+                // Transition back to LOCKED
+                state = LOCKED;
+                ledcAnalogWrite(LEDC_CHANNEL_RED, 0);
+                ledcAnalogWrite(LEDC_CHANNEL_GREEN, 0);
+                ledcAnalogWrite(LEDC_CHANNEL_BLUE, 0);
+                Serial.println("Transitioned to LOCKED state.");
             }
         }
     }
 };
 
-void updateLED() {
-    switch (lockState) {
-        case LOCKED:
-            analogWrite(ledPin, 0);
-            break;
-        case OPENING:
-            analogWrite(ledPin, 85);
-            break;
-        case OPEN:
-            analogWrite(ledPin, 170);
-            break;
-        case LOCKING:
-            analogWrite(ledPin, 255);
-            break;
+// Callback class for BLE server
+class MyServerCallbacks: public BLEServerCallbacks {
+    void onConnect(BLEServer* pServer) override {
+        Serial.println("Client Connected");
+        deviceConnected = true;
     }
-}
+
+    void onDisconnect(BLEServer* pServer) override {
+        Serial.println("Client Disconnected");
+        deviceConnected = false;
+    }
+};
 
 void setup() {
     Serial.begin(115200);
-    pinMode(ledPin, OUTPUT);
+    Serial.println("Starting BLE work!");
 
-    // Create the BLE Device
-    BLEDevice::init("ESP32");
+    // Set up PWM for each color
+    ledcSetup(LEDC_CHANNEL_RED, LEDC_BASE_FREQ, LEDC_TIMER_12_BIT);
+    ledcAttachPin(RED_PIN, LEDC_CHANNEL_RED);
+    ledcSetup(LEDC_CHANNEL_GREEN, LEDC_BASE_FREQ, LEDC_TIMER_12_BIT);
+    ledcAttachPin(GREEN_PIN, LEDC_CHANNEL_GREEN);
+    ledcSetup(LEDC_CHANNEL_BLUE, LEDC_BASE_FREQ, LEDC_TIMER_12_BIT);
+    ledcAttachPin(BLUE_PIN, LEDC_CHANNEL_BLUE);
 
-    // Create the BLE Server
+    // Initialize LEDs to off state using PWM
+    ledcAnalogWrite(LEDC_CHANNEL_RED, 0);
+    ledcAnalogWrite(LEDC_CHANNEL_GREEN, 0);
+    ledcAnalogWrite(LEDC_CHANNEL_BLUE, 0);
+
+    BLEDevice::init("VIRUS_PLEASE_CONNECT");
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(new MyServerCallbacks());
-
-    // Create the BLE Service
     BLEService *pService = pServer->createService(SERVICE_UUID);
-
-    // Create a BLE Characteristic for sensor data
-    pSensorCharacteristic = pService->createCharacteristic(
-                      SENSOR_CHARACTERISTIC_UUID,
-                      BLECharacteristic::PROPERTY_READ |
-                      BLECharacteristic::PROPERTY_NOTIFY
-                    );
-
-    // Create a BLE Characteristic for LED control
-    pLedCharacteristic = pService->createCharacteristic(
-                      LED_CHARACTERISTIC_UUID,
-                      BLECharacteristic::PROPERTY_WRITE
-                    );
-
-    // Create a BLE Characteristic for lock state
-    pStateCharacteristic = pService->createCharacteristic(
-                      STATE_CHARACTERISTIC_UUID,
-                      BLECharacteristic::PROPERTY_WRITE
-                    );
-    pStateCharacteristic->setCallbacks(new MyStateCharacteristicCallbacks());
-
-    pSensorCharacteristic->addDescriptor(new BLE2902());
-    pLedCharacteristic->addDescriptor(new BLE2902());
-    pStateCharacteristic->addDescriptor(new BLE2902());
-
-    // Start the service
+    pCharacteristic = pService->createCharacteristic(
+                                        CHARACTERISTIC_UUID,
+                                        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+    pCharacteristic->setCallbacks(new MyCallbacks());
+    pCharacteristic->setValue("Ready for commands");
     pService->start();
-
-    // Start advertising
     BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
     pAdvertising->addServiceUUID(SERVICE_UUID);
-    pAdvertising->setScanResponse(false);
-    pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
+    pAdvertising->setScanResponse(true);
+    pAdvertising->setMinPreferred(0x06);
+    pAdvertising->setMinPreferred(0x12);
     BLEDevice::startAdvertising();
-    Serial.println("Waiting for a client connection to notify...");
+    Serial.println("Characteristic defined! Now you can read it in your phone!");
 }
 
 void loop() {
-    // notify changed value
-    if (deviceConnected) {
-        pSensorCharacteristic->setValue(String(value).c_str());
-        pSensorCharacteristic->notify();
-        value++;
-        delay(3000);
-    }
-    // disconnecting
+    // Handle device connection and reconnection logic
     if (!deviceConnected && oldDeviceConnected) {
-        delay(500);
-        pServer->startAdvertising();
+        delay(500); // Small delay to ensure stability
+        pServer->startAdvertising(); // Restart advertising
         oldDeviceConnected = deviceConnected;
         Serial.println("Start advertising");
     }
-    // connecting
     if (deviceConnected && !oldDeviceConnected) {
         oldDeviceConnected = deviceConnected;
         Serial.println("Device Connected");
