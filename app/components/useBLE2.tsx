@@ -18,6 +18,9 @@ interface BluetoothLowEnergyApi {
   connectedDevice: Device | null;
   doorStatus: string;
   allDevices: Device[];
+  writeLockState(isLocked: boolean): void;
+
+  //setDoorState: (openDoor: boolean) => void;
 
   // monitorLockStatus(): void;
 }
@@ -31,11 +34,13 @@ function useBLE(): BluetoothLowEnergyApi {
 
   // UUID's for CUSTOM UUID 0000181C-0000-1000-8000-00805F9B34FB
 
-/*   const LOCK_UUID = "0000180D-0000-1000-8000-00805F9B34FB";
-  const CHAR = "00002A38-0000-1000-8000-00805F9B34FB"; */
+  const LOCK_UUID = "0000180D-0000-1000-8000-00805F9B34FB";
+  const CHAR = "00002A38-0000-1000-8000-00805F9B34FB";
 
+/*
+    -- Our Smart Lock Door UUID's
   const LOCK_UUID = "6f340e06-add8-495c-9da4-ce8558771834";
-  const CHAR = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+  const CHAR = "beb5483e-36e1-4688-b7f5-ea07361b26a8"; */
 
   const [allDevices, setAllDevices] = useState<Device[]>([]);
   const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
@@ -263,7 +268,28 @@ function useBLE(): BluetoothLowEnergyApi {
     }
   };
 
+  const writeLockState = async (isLocked: boolean) => {
+    if (!connectedDevice) {
+      console.log("No device connected to write lock state.");
+      return;
+    }
 
+    const command = isLocked ? "01" : "00"; // Command to lock or unlock
+    const encodedCommand = base64.encode(command);
+    try {
+      await connectedDevice.writeCharacteristicWithResponseForService(
+        LOCK_UUID,
+        CHAR,
+        encodedCommand
+      );
+      console.log(
+        "Lock state sent successfully:",
+        isLocked ? "Locked" : "Unlocked"
+      );
+    } catch (error) {
+      console.error("Failed to write to characteristic:", error);
+    }
+  };
 
   return {
     scanForPeripherals,
@@ -274,6 +300,7 @@ function useBLE(): BluetoothLowEnergyApi {
     V3disconnectFromDevice,
     //monitorLockStatus,
     doorStatus,
+    writeLockState
   };
 }
 

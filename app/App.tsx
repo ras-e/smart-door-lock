@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import DeviceModal from "./components/DeviceModal";
 import useBLE from "./components/useBLE2";
-import LockButton from "./components/LockButton";
+import LockButton from "./components/LockButton2";
 
 export default function App() {
   const {
@@ -20,6 +20,7 @@ export default function App() {
     allDevices,
     connectedDevice,
     doorStatus,
+    writeLockState,
   } = useBLE();
 
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
@@ -68,7 +69,7 @@ export default function App() {
   };
 
 
-  
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.TitleWrapper}>
@@ -83,7 +84,7 @@ export default function App() {
                 alignItems: "center",
               }}
             >
-              <LockButton />
+              <LockButton writeLockState={writeLockState}/>
             </SafeAreaView>
           </>
         ) : (
