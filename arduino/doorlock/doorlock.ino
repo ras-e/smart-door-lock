@@ -27,6 +27,7 @@ BLEServer* pServer = NULL;
 
 int brightness = 0;    // how bright the LED is
 std::string userInput = "";
+std::string lastUserInput = "";
 
 // fade LED PIN (replace with LED_BUILTIN constant for built-in LED)
 #define LED_PIN            2 
@@ -94,15 +95,31 @@ void loop() {
   // put your main code here, to run repeatedly:
   if (deviceConnected) {
     //1 open, 2 lock
-    userInput = pCharacteristic->getValue();
+    if (pCharacteristic->getValue() != lastUserInput) {
+      userInput = pCharacteristic->getValue();
+      lastUserInput = userInput;
+    }
     if (userInput == "OPEN" && state == LOCKED) {
       state = OPENING;
       brightness = 50;
       userInput = "";
     } else if (state == OPENING) {
-      //TODO add timer to if
-      state = OPEN;
-      brightness = 255;
+      long long startTime = millis();
+      long long endTime = millis();
+      long long delay = endTime - startTime;
+      while (state != OPEN && delay < 10000) {
+        endTime = millis();
+        if (delay > 0) {
+          state = OPEN;
+        }
+        delay = endTime - startTime;
+      }
+      if (state == OPENING) {
+        state = LOCKED;
+        brightness = 0;
+      } else if (state == OPEN) {
+        brightness = 255;
+      }
     } else if (userInput == "LOCK" && state == OPEN) {
       state = LOCKING;
       brightness = 50;
