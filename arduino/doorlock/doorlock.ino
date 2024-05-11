@@ -49,7 +49,7 @@ class MyCallbacks: public BLECharacteristicCallbacks {
             Serial.println(value.c_str());
             Serial.print("Current State: ");
             Serial.println(state);
-            if (value == "OPEN" && state == LOCKED) {
+            if (value == "Unlocked" && state == LOCKED) {
                 state = OPENING;
                 // Transition to OPEN after some time or immediately for demonstration
                 state = OPEN;
@@ -57,7 +57,7 @@ class MyCallbacks: public BLECharacteristicCallbacks {
                 ledcAnalogWrite(LEDC_CHANNEL_GREEN, 0);
                 ledcAnalogWrite(LEDC_CHANNEL_BLUE, 0);
                 Serial.println("Transitioned to OPEN state.");
-            } else if (value == "LOCK" && state == OPEN) {
+            } else if (value == "Locked" && state == OPEN) {
                 state = LOCKING;
                 // Transition back to LOCKED
                 state = LOCKED;
@@ -100,7 +100,7 @@ void setup() {
     ledcAnalogWrite(LEDC_CHANNEL_GREEN, 0);
     ledcAnalogWrite(LEDC_CHANNEL_BLUE, 0);
 
-    BLEDevice::init("VIRUS_PLEASE_CONNECT");
+    BLEDevice::init("Smart lock group 15");
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(new MyServerCallbacks());
     BLEService *pService = pServer->createService(SERVICE_UUID);
