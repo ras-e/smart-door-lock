@@ -63,10 +63,10 @@ void changeColor() {
     ledcAnalogWrite(LEDC_CHANNEL_GREEN, 0);
     ledcAnalogWrite(LEDC_CHANNEL_BLUE, 0);
     Serial.println("Transitioned to LOCKED state.");
-  } else if (state = reset) {
-    ledcAnalogWrite(LEDC_CHANNEL_RED, 0);
-    ledcAnalogWrite(LEDC_CHANNEL_GREEN, 0);
-    ledcAnalogWrite(LEDC_CHANNEL_BLUE, 255);
+  } else if (state = RESET) {
+    ledcAnalogWrite(LEDC_CHANNEL_RED, 200);
+    ledcAnalogWrite(LEDC_CHANNEL_GREEN, 100);
+    ledcAnalogWrite(LEDC_CHANNEL_BLUE, 200);
     Serial.println("Transitioned to RESET state.");
   }
 }
@@ -100,10 +100,11 @@ class MyCallbacks: public BLECharacteristicCallbacks {
                 }
                 // Schedule immediate state transition for demonstration purposes
                 // Real implementation might involve asynchronous operations
-            } else if (value == "reset") {
+            } else if (value == "Reset") {
               state = RESET;
               changeColor();
-              pServer->disconnect();
+              delay(3000);
+              pServer->disconnect(pServer->getConnId());
             }
             else {
                 commandInProgress = false; // No valid command for current state
@@ -186,13 +187,13 @@ void loop() {
       pServer->startAdvertising(); // Restart advertising
       oldDeviceConnected = deviceConnected;
       Serial.println("Start advertising");
-  }
-  if (deviceConnected && !oldDeviceConnected) {
-      oldDeviceConnected = deviceConnected;
-      Serial.println("Device Connected");
       if (state == RESET) {
         state == LOCKED;
         changeColor();
       }
+  }
+  if (deviceConnected && !oldDeviceConnected) {
+      oldDeviceConnected = deviceConnected;
+      Serial.println("Device Connected");
   }
 }
