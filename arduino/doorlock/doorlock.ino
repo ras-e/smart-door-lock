@@ -129,11 +129,16 @@ void setup() {
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(new MyServerCallbacks());
     BLEService *pService = pServer->createService(SERVICE_UUID);
+    
     pCharacteristic = pService->createCharacteristic(
-                                        CHARACTERISTIC_UUID,
-                                        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+                        CHARACTERISTIC_UUID,
+                        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
     pCharacteristic->setCallbacks(new MyCallbacks());
-    pCharacteristic->setValue("Ready for commands");
+
+    // Set initial characteristic value based on lock state
+    const char* initialState = (state == LOCKED) ? "Locked" : "Unlocked";
+    pCharacteristic->setValue(initialState);
+
     pService->start();
     BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
     pAdvertising->addServiceUUID(SERVICE_UUID);
@@ -143,6 +148,7 @@ void setup() {
     BLEDevice::startAdvertising();
     Serial.println("Characteristic defined! Now you can read it in your phone!");
 }
+
 
 void loop() {
     if (commandInProgress) {
