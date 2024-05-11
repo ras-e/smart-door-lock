@@ -31,7 +31,8 @@ enum State {
     LOCKED,
     OPENING,
     OPEN,
-    LOCKING
+    LOCKING,
+    RESET
 };
 
 State state = LOCKED;
@@ -49,6 +50,31 @@ void ledcAnalogWrite(uint8_t channel, uint32_t value, uint32_t valueMax = 255) {
     ledcWrite(channel, duty);
 }
 
+
+void changeColor() {
+  if (state == OPEN) {
+    digitalWrite(RED_PIN, HIGH); // OFF
+    digitalWrite(GREEN_PIN, LOW); // ON
+    digitalWrite(BLUE_PIN, HIGH); // OFF
+    Serial.println("Transitioned to OPEN state.");
+  } else if (state == OPENING || state == LOCKING) {
+    digitalWrite(RED_PIN, LOW); // ON
+    digitalWrite(GREEN_PIN, LOW); // ON
+    digitalWrite(BLUE_PIN, HIGH); // OFF
+  } else if (state == LOCKED) {
+    digitalWrite(RED_PIN, LOW);  // ON
+    digitalWrite(GREEN_PIN, HIGH); // OFF
+    digitalWrite(BLUE_PIN, HIGH); // OFF
+    Serial.println("Transitioned to LOCKED state.");
+  } else if (state = RESET) {
+  digitalWrite(RED_PIN, HIGH); // OFF
+    digitalWrite(GREEN_PIN, HIGH); // OFF
+    digitalWrite(BLUE_PIN, LOW); // ON
+    Serial.println("Transitioned to RESET state.");
+  }
+}
+
+
 // Callback class for BLE characteristic
 class MyCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
@@ -63,19 +89,23 @@ class MyCallbacks: public BLECharacteristicCallbacks {
             commandStartTime = millis();
             commandInProgress = true;
 
-            if ((value == "Unlocked" && state == LOCKED) || (value == "Locked" && state == OPEN)) {
+             if ((value == "Unlocked" && state == LOCKED) || (value == "Locked" && state == OPEN)) {
                 if (value == "Unlocked" && state == LOCKED) {
                     state = OPENING;
+                    changeColor();
                 } else if (value == "Locked" && state == OPEN) {
                     state = LOCKING;
+                    changeColor();
                 }
                 // Schedule immediate state transition for demonstration purposes
                 // Real implementation might involve asynchronous operations
-                ledcAnalogWrite(LEDC_CHANNEL_RED, (state == OPENING) ? 255 : 0);
-                ledcAnalogWrite(LEDC_CHANNEL_GREEN, 0);
-                ledcAnalogWrite(LEDC_CHANNEL_BLUE, (state == LOCKING) ? 255 : 0);
-                Serial.println("State transition initiated.");
-            } else {
+            } else if (value == "Reset") {
+              state = RESET;
+              changeColor();
+              delay(1000);
+              pServer->disconnect(pServer->getConnId());
+            }
+            else {
                 commandInProgress = false; // No valid command for current state
                 Serial.println("Invalid command for current state.");
             }
@@ -101,18 +131,11 @@ void setup() {
     Serial.begin(115200);
     Serial.println("Starting BLE work!");
 
-    // Set up PWM for each color
-    ledcSetup(LEDC_CHANNEL_RED, LEDC_BASE_FREQ, LEDC_TIMER_12_BIT);
-    ledcAttachPin(RED_PIN, LEDC_CHANNEL_RED);
-    ledcSetup(LEDC_CHANNEL_GREEN, LEDC_BASE_FREQ, LEDC_TIMER_12_BIT);
-    ledcAttachPin(GREEN_PIN, LEDC_CHANNEL_GREEN);
-    ledcSetup(LEDC_CHANNEL_BLUE, LEDC_BASE_FREQ, LEDC_TIMER_12_BIT);
-    ledcAttachPin(BLUE_PIN, LEDC_CHANNEL_BLUE);
+      pinMode(RED_PIN, OUTPUT);
+  pinMode(GREEN_PIN, OUTPUT);
+  pinMode(BLUE_PIN, OUTPUT);
 
-    // Initialize LEDs to off state using PWM
-    ledcAnalogWrite(LEDC_CHANNEL_RED, 0);
-    ledcAnalogWrite(LEDC_CHANNEL_GREEN, 0);
-    ledcAnalogWrite(LEDC_CHANNEL_BLUE, 0);
+  changeColor();
 
     BLEDevice::init("Smart lock group 15");
     pServer = BLEDevice::createServer();
@@ -148,24 +171,24 @@ void setup() {
 
 
 void loop() {
-    if (commandInProgress) {
-        unsigned long currentTime = millis();
-        if (currentTime - commandStartTime > 10000) { // 10 seconds timeout
-            // Command timeout
-            Serial.println("Command timed out, reverting state changes.");
-            commandInProgress = false;
-            ledcAnalogWrite(LEDC_CHANNEL_RED, 0);
-            ledcAnalogWrite(LEDC_CHANNEL_GREEN, 0);
-            ledcAnalogWrite(LEDC_CHANNEL_BLUE, 0);
-            state = LOCKED; // Revert to a safe state, adjust as necessary
-        } else if (state == OPENING || state == LOCKING) {
-            // Complete the state transition
-            state = (state == OPENING) ? OPEN : LOCKED;
-            commandInProgress = false;
-            Serial.print("State transition completed to ");
-            Serial.println(state == OPEN ? "OPEN" : "LOCKED");
-        }
+  if (commandInProgress) {
+    //delay(11000); //delay for testing
+    unsigned long currentTime = millis();
+    if (currentTime - commandStartTime > 10000) { // 10 seconds timeout
+        // Command timeout
+        Serial.println("Command timed out, reverting state changes.");
+        commandInProgress = false;
+        state = LOCKED; // Revert to a safe state, adjust as necessary
+        changeColor();
+    } else if (state == OPENING || state == LOCKING) {
+        // Complete the state transition
+        state = (state == OPENING) ? OPEN : LOCKED;
+        commandInProgress = false;
+        Serial.print("State transition completed to ");
+        Serial.println(state == OPEN ? "OPEN" : "LOCKED");
+        changeColor();
     }
+  }
 
     unsigned long currentMillis = millis();
     if (currentMillis - lastHeartbeatMillis >= heartbeatInterval) {
@@ -178,16 +201,20 @@ void loop() {
         Serial.println("Heartbeat sent: " + heartbeatValue + " ms");
     }
 
-    // Handle device connection and reconnection logic
-    if (!deviceConnected && oldDeviceConnected) {
-        delay(500); // Small delay to ensure stability
-        pServer->startAdvertising(); // Restart advertising
-        oldDeviceConnected = deviceConnected;
-        Serial.println("Start advertising");
-    }
-    if (deviceConnected && !oldDeviceConnected) {
-        oldDeviceConnected = deviceConnected;
-        Serial.println("Device Connected");
-    }
+ // Handle device connection and reconnection logic
+  if (!deviceConnected && oldDeviceConnected) {
+      delay(500); // Small delay to ensure stability
+      pServer->startAdvertising(); // Restart advertising
+      oldDeviceConnected = deviceConnected;
+      Serial.println("Start advertising");
+      if (state == RESET) {
+        state == LOCKED;
+        changeColor();
+      }
+  }
+  if (deviceConnected && !oldDeviceConnected) {
+      oldDeviceConnected = deviceConnected;
+      Serial.println("Device Connected");
+  }
 }
 
