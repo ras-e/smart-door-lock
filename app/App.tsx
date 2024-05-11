@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import DeviceModal from "./components/DeviceModal";
 import useBLE from "./components/useBLE2";
-import LockButton from "./components/LockButton2";
+import LockButton from "./components/LockButton";
 
 export default function App() {
   const {
@@ -35,7 +35,7 @@ export default function App() {
   }, [connectedDevice]);
 
   useEffect(() => {
-    console.log("Connected Device Changed:", connectedDevice);
+    console.log("CONNECTED DEVICE STATUS CHANGED:", connectedDevice?.name);
     setIsLoading(false); // Stop loading indicator when device state changes
     if (connectedDevice) {
       setIsModalVisible(false); // Ensure modal is closed when a device is connected
@@ -46,12 +46,6 @@ export default function App() {
     setIsModalVisible(false);
   };
 
-  /*   const openModal = async () => {
-    await requestPermissions();
-    scanForPeripherals();
-    setIsModalVisible(true);
-  };
- */
 
   const openModal = async () => {
     setIsLoading(true);
@@ -84,7 +78,7 @@ export default function App() {
                 alignItems: "center",
               }}
             >
-              <LockButton writeLockState={writeLockState}/>
+              <LockButton writeLockState={writeLockState} initialState={doorStatus === "Locked"} />
             </SafeAreaView>
           </>
         ) : (

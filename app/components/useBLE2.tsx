@@ -19,6 +19,7 @@ interface BluetoothLowEnergyApi {
   doorStatus: string;
   allDevices: Device[];
   writeLockState(isLocked: boolean): void;
+  initialState: Boolean;
 
   //setDoorState: (openDoor: boolean) => void;
 
@@ -34,17 +35,19 @@ function useBLE(): BluetoothLowEnergyApi {
 
   // UUID's for CUSTOM UUID 0000181C-0000-1000-8000-00805F9B34FB
 
-  const LOCK_UUID = "0000180D-0000-1000-8000-00805F9B34FB";
+/*   const LOCK_UUID = "0000180D-0000-1000-8000-00805F9B34FB";
   const CHAR = "00002A38-0000-1000-8000-00805F9B34FB";
-
-/*
-    -- Our Smart Lock Door UUID's
+ */
+  
+    //-- Our Smart Lock Door UUID's
   const LOCK_UUID = "6f340e06-add8-495c-9da4-ce8558771834";
-  const CHAR = "beb5483e-36e1-4688-b7f5-ea07361b26a8"; */
+  const CHAR = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
   const [allDevices, setAllDevices] = useState<Device[]>([]);
   const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
   const [doorStatus, setDoorStatus] = useState<string>("Unknown");
+  const [initialState, setInitialState] = useState<Boolean>(false);
+
 
   const connectedDeviceRef = useRef<Device | null>(null);
 
@@ -115,10 +118,8 @@ function useBLE(): BluetoothLowEnergyApi {
     }
 
     if (Platform.OS === "android") {
-      console.log(
-        `Detected Android API level: ${ExpoDevice.platformApiLevel ?? -1}`
-      );
-      if ((ExpoDevice.platformApiLevel ?? -1) < 31) {
+      const apiLevel = parseInt(Platform.Version.toString(), 10);
+      if (apiLevel < 31) {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
           {
@@ -127,10 +128,8 @@ function useBLE(): BluetoothLowEnergyApi {
             buttonPositive: "OK",
           }
         );
-        const result = granted === PermissionsAndroid.RESULTS.GRANTED;
-        console.log(`ACCESS_FINE_LOCATION permission granted: ${result}`);
-        return result;
-        //return granted === PermissionsAndroid.RESULTS.GRANTED;
+        console.log("ACCESS_FINE_LOCATION GRANTED", granted);
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
       } else {
         const isAndroid31PermissionsGranted =
           await requestAndroid31Permissions();
@@ -174,7 +173,6 @@ function useBLE(): BluetoothLowEnergyApi {
         return; // Exit if no device connection could be established
       }
       setConnectedDevice(deviceConnection);
-      console.log("device connection set");
       await deviceConnection.discoverAllServicesAndCharacteristics();
       bleManager.stopDeviceScan(); // Stop scanning as soon as a connection is established
       console.log("stopped scanning");
@@ -203,7 +201,7 @@ function useBLE(): BluetoothLowEnergyApi {
             connectToDevice(device);
           }
         }
-      }, 1000);
+      }, 10000);
     } catch (e) {
       console.error("Failed to connect:", e);
       setConnectedDevice(null); // Ensure the state is cleared on connection failure
@@ -232,12 +230,20 @@ function useBLE(): BluetoothLowEnergyApi {
 
     const rawData = base64.decode(characteristic.value);
     console.log("Received data:", rawData);
-    console.log("Current device:", connectedDeviceRef.current?.id);
 
-    const doorIsOpen = rawData.charCodeAt(0) == 0x01;
+    //const doorIsOpen = rawData.charCodeAt(0) == 0x01;
 
-    //setDoorStatus(doorIsOpen ? "Unlocked" : "Locked");
-    setDoorStatus(rawData);
+    //const isLocked = rawData === "Locked";
+
+    //const isLocked = rawData === "Locked";
+    //Determine if the lock is in the "Locked" state
+    const isLocked = rawData === "Locked"; // 
+
+    // Set the door status based on whether the lock is locked or unlocked
+    setDoorStatus(isLocked ? "Locked" : "Unlocked");
+
+    // Set the initial state as true if locked, false otherwise
+    setInitialState(isLocked);
   };
 
   const fetchDoorData = async (device: Device) => {
@@ -274,7 +280,7 @@ function useBLE(): BluetoothLowEnergyApi {
       return;
     }
 
-    const command = isLocked ? "01" : "00"; // Command to lock or unlock
+    const command = isLocked ? "Locked" : "Unlocked"; // Command to lock or unlock
     const encodedCommand = base64.encode(command);
     try {
       await connectedDevice.writeCharacteristicWithResponseForService(
@@ -282,6 +288,7 @@ function useBLE(): BluetoothLowEnergyApi {
         CHAR,
         encodedCommand
       );
+      fetchDoorData(connectedDevice);
       console.log(
         "Lock state sent successfully:",
         isLocked ? "Locked" : "Unlocked"
@@ -290,6 +297,21 @@ function useBLE(): BluetoothLowEnergyApi {
       console.error("Failed to write to characteristic:", error);
     }
   };
+
+/*   const fetchInitialState = async (device: Device) => {
+    try {
+      const characteristic = await device.readCharacteristicForService(
+        LOCK_UUID,
+        CHAR
+      );
+      const valueDecoded = base64.decode(characteristic.value);
+      const isLocked = valueDecoded === "01"; // Assuming "01" means locked
+      setInitialLockState(isLocked);
+    } catch (error) {
+      console.error("Failed to fetch initial lock state:", error);
+      setInitialLockState(false); // Default or handle error appropriately
+    }
+  }; */
 
   return {
     scanForPeripherals,
@@ -300,7 +322,8 @@ function useBLE(): BluetoothLowEnergyApi {
     V3disconnectFromDevice,
     //monitorLockStatus,
     doorStatus,
-    writeLockState
+    writeLockState,
+    initialState
   };
 }
 
