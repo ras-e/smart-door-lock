@@ -67,6 +67,8 @@ void changeColor() {
 
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
+unsigned long commandStartTime = 0;
+bool commandInProgress = false;
 
 // Callback class for BLE characteristic
 class MyCallbacks: public BLECharacteristicCallbacks {
@@ -77,36 +79,24 @@ class MyCallbacks: public BLECharacteristicCallbacks {
             Serial.println(value.c_str());
             Serial.print("Current State: ");
             Serial.println(state);
-            if (value == "Unlocked" && state == LOCKED) {
-                //going to unlocking mode 
-                state = OPENING;
-                changeColor();
+            
+            // Start command processing timer
+            commandStartTime = millis();
+            commandInProgress = true;
 
-                //Tries to unlock
-                long startTime = millis();
-                long endTime = millis();
-                int delay = endTime - startTime;
-                while (state != OPEN && delay < 10000) {
-                  endTime = millis();
-                  if (delay > 10000) {
-                    state = OPEN;
+            if ((value == "Unlocked" && state == LOCKED) || (value == "Locked" && state == OPEN)) {
+                if (value == "Unlocked" && state == LOCKED) {
+                    state = OPENING;
                     changeColor();
-                  }
-                  delay = endTime - startTime;
+                } else if (value == "Locked" && state == OPEN) {
+                    state = LOCKING;
+                    changeColor();
                 }
-                //Goes back to locked if it could not unlock
-                if (state == OPENING) {
-                  state = LOCKED;
-                  changeColor();
-                } 
-            } else if (value == "Locked" && state == OPEN) {
-                //Going to locking state
-                state = LOCKING;
-                changeColor();
-
-                // Transition back to LOCKED
-                state = LOCKED;
-                changeColor();
+                // Schedule immediate state transition for demonstration purposes
+                // Real implementation might involve asynchronous operations
+            } else {
+                commandInProgress = false; // No valid command for current state
+                Serial.println("Invalid command for current state.");
             }
         }
     }
@@ -161,6 +151,24 @@ void setup() {
 }
 
 void loop() {
+  if (commandInProgress) {
+    //delay(11000); delay for testing
+    unsigned long currentTime = millis();
+    if (currentTime - commandStartTime > 10000) { // 10 seconds timeout
+        // Command timeout
+        Serial.println("Command timed out, reverting state changes.");
+        commandInProgress = false;
+        state = LOCKED; // Revert to a safe state, adjust as necessary
+        changeColor();
+    } else if (state == OPENING || state == LOCKING) {
+        // Complete the state transition
+        state = (state == OPENING) ? OPEN : LOCKED;
+        commandInProgress = false;
+        Serial.print("State transition completed to ");
+        Serial.println(state == OPEN ? "OPEN" : "LOCKED");
+        changeColor();
+    }
+  }
   // Handle device connection and reconnection logic
   if (!deviceConnected && oldDeviceConnected) {
       delay(500); // Small delay to ensure stability
