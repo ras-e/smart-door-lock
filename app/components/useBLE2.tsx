@@ -8,7 +8,6 @@ import {
 } from "react-native-ble-plx";
 import base64 from "react-native-base64";
 import { ble_manager } from "./ble_manager";
-
 import * as ExpoDevice from "expo-device";
 
 interface BluetoothLowEnergyApi {
@@ -19,6 +18,10 @@ interface BluetoothLowEnergyApi {
   connectedDevice: Device | null;
   doorStatus: string;
   allDevices: Device[];
+  writeLockState(isLocked: boolean): void;
+  initialState: Boolean;
+
+  //setDoorState: (openDoor: boolean) => void;
 
   // monitorLockStatus(): void;
 }
@@ -32,12 +35,19 @@ function useBLE(): BluetoothLowEnergyApi {
 
   // UUID's for CUSTOM UUID 0000181C-0000-1000-8000-00805F9B34FB
 
-  const LOCK_UUID = "0000180D-0000-1000-8000-00805F9B34FB";
+/*   const LOCK_UUID = "0000180D-0000-1000-8000-00805F9B34FB";
   const CHAR = "00002A38-0000-1000-8000-00805F9B34FB";
+ */
+  
+    //-- Our Smart Lock Door UUID's
+  const LOCK_UUID = "6f340e06-add8-495c-9da4-ce8558771834";
+  const CHAR = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
   const [allDevices, setAllDevices] = useState<Device[]>([]);
   const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
   const [doorStatus, setDoorStatus] = useState<string>("Unknown");
+  const [initialState, setInitialState] = useState<Boolean>(false);
+
 
   const connectedDeviceRef = useRef<Device | null>(null);
 
@@ -47,9 +57,8 @@ function useBLE(): BluetoothLowEnergyApi {
 
   let intervalHandle: ReturnType<typeof setTimeout>;
 
-const delay = (ms: number | undefined) =>
+  const delay = (ms: number | undefined) =>
     new Promise((resolve) => setTimeout(resolve, ms));
-
 
   const requestAndroid31Permissions = async () => {
     const bluetoothScanPermission = await PermissionsAndroid.request(
@@ -109,10 +118,8 @@ const delay = (ms: number | undefined) =>
     }
 
     if (Platform.OS === "android") {
-      console.log(
-        `Detected Android API level: ${ExpoDevice.platformApiLevel ?? -1}`
-      );
-      if ((ExpoDevice.platformApiLevel ?? -1) < 31) {
+      const apiLevel = parseInt(Platform.Version.toString(), 10);
+      if (apiLevel < 31) {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
           {
@@ -121,10 +128,8 @@ const delay = (ms: number | undefined) =>
             buttonPositive: "OK",
           }
         );
-        const result = granted === PermissionsAndroid.RESULTS.GRANTED;
-        console.log(`ACCESS_FINE_LOCATION permission granted: ${result}`);
-        return result;
-        //return granted === PermissionsAndroid.RESULTS.GRANTED;
+        console.log("ACCESS_FINE_LOCATION GRANTED", granted);
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
       } else {
         const isAndroid31PermissionsGranted =
           await requestAndroid31Permissions();
@@ -147,7 +152,7 @@ const delay = (ms: number | undefined) =>
         console.log(error);
       }
 
-      //Device name reference
+      //DeviceName reference
       if (device && device.name?.includes(deviceName)) {
         setAllDevices((prevState: Device[]) => {
           if (!isDuplicateDevice(prevState, device)) {
@@ -159,51 +164,49 @@ const delay = (ms: number | undefined) =>
     });
   };
 
-
-const connectToDevice = async (device: Device) => {
-  try {
-    clearInterval(intervalHandle); // Ensure any existing interval is cleared before starting a new connection attempt
-    const deviceConnection = await bleManager.connectToDevice(device.id);
-    if (!deviceConnection) {
-      console.error("Failed to connect to device:", device.id);
-      return; // Exit if no device connection could be established
-    }
-    setConnectedDevice(deviceConnection);
-    console.log("device connection set");
-    await deviceConnection.discoverAllServicesAndCharacteristics();
-    bleManager.stopDeviceScan(); // Stop scanning as soon as a connection is established
-    console.log("stopped scanning");
-
-    console.log("--Fetched first time--");
-    fetchDoorData(deviceConnection); // Initial fetch
-
-    intervalHandle = setInterval(async () => {
-      const isConnected = await bleManager.isDeviceConnected(device.id);
-      if (isConnected) {
-        console.log("Current device state: " + isConnected);
-        console.log("Fetching data...");
-        //fetchDoorData(deviceConnection); // Use the direct deviceConnection reference here
-        if (connectedDeviceRef.current) {
-          fetchDoorData(connectedDeviceRef.current); // Use the ref here
-        }
-      } else {
-        console.log("Device not connected. Stopping attempts to fetch data.");
-        clearInterval(intervalHandle); // Clear the interval as soon as the device is not connected
-        if (connectedDeviceRef.current) {
-          // Check if the disconnection was unexpected
-
-          console.log("Attempting to reconnect...");
-          await delay(5000); // Wait for 5 seconds before reconnecting
-          connectToDevice(device);
-        }
+  const connectToDevice = async (device: Device) => {
+    try {
+      clearInterval(intervalHandle); // Ensure any existing interval is cleared before starting a new connection attempt
+      const deviceConnection = await bleManager.connectToDevice(device.id);
+      if (!deviceConnection) {
+        console.error("Failed to connect to device:", device.id);
+        return; // Exit if no device connection could be established
       }
-    }, 1000);
-  } catch (e) {
-    console.error("Failed to connect:", e);
-    setConnectedDevice(null); // Ensure the state is cleared on connection failure
-  }
-};
+      setConnectedDevice(deviceConnection);
+      await deviceConnection.discoverAllServicesAndCharacteristics();
+      bleManager.stopDeviceScan(); // Stop scanning as soon as a connection is established
+      console.log("stopped scanning");
 
+      console.log("--Fetched first time--");
+      fetchDoorData(deviceConnection); // Initial fetch
+
+      intervalHandle = setInterval(async () => {
+        const isConnected = await bleManager.isDeviceConnected(device.id);
+        if (isConnected) {
+          console.log("Current device state: " + isConnected);
+          console.log("Fetching data...");
+          //fetchDoorData(deviceConnection); // Use the direct deviceConnection reference here
+          if (connectedDeviceRef.current) {
+            fetchDoorData(connectedDeviceRef.current); // Use the ref here
+          }
+        } else {
+          console.log("Device not connected. Stopping attempts to fetch data.");
+          clearInterval(intervalHandle); // Clear the interval as soon as the device is not connected
+          if (connectedDeviceRef.current) {
+            // Check if the disconnection was unexpected
+
+            console.log("Attempting to reconnect...");
+            setDoorStatus("Attempting to reconnect...");
+            await delay(5000); // Wait for 5 seconds before reconnecting
+            connectToDevice(device);
+          }
+        }
+      }, 10000);
+    } catch (e) {
+      console.error("Failed to connect:", e);
+      setConnectedDevice(null); // Ensure the state is cleared on connection failure
+    }
+  };
 
   const V3disconnectFromDevice = () => {
     if (connectedDeviceRef.current) {
@@ -227,19 +230,25 @@ const connectToDevice = async (device: Device) => {
 
     const rawData = base64.decode(characteristic.value);
     console.log("Received data:", rawData);
-    console.log("Current device:", connectedDeviceRef.current?.id);
 
-    const doorIsOpen = rawData.charCodeAt(0) == 0x01;
+    //const doorIsOpen = rawData.charCodeAt(0) == 0x01;
 
-    setDoorStatus(doorIsOpen ? "Unlocked" : "Locked");
+    //const isLocked = rawData === "Locked";
+
+    //const isLocked = rawData === "Locked";
+    //Determine if the lock is in the "Locked" state
+    const isLocked = rawData === "Locked"; // 
+
+    // Set the door status based on whether the lock is locked or unlocked
+    setDoorStatus(isLocked ? "Locked" : "Unlocked");
+
+    // Set the initial state as true if locked, false otherwise
+    setInitialState(isLocked);
   };
 
   const fetchDoorData = async (device: Device) => {
     if (device) {
-      let char = device.readCharacteristicForService(
-        LOCK_UUID,
-        CHAR,
-      );
+      let char = device.readCharacteristicForService(LOCK_UUID, CHAR);
       try {
         let c = await char;
         handleResponse(c);
@@ -265,6 +274,45 @@ const connectToDevice = async (device: Device) => {
     }
   };
 
+  const writeLockState = async (isLocked: boolean) => {
+    if (!connectedDevice) {
+      console.log("No device connected to write lock state.");
+      return;
+    }
+
+    const command = isLocked ? "Locked" : "Unlocked"; // Command to lock or unlock
+    const encodedCommand = base64.encode(command);
+    try {
+      await connectedDevice.writeCharacteristicWithResponseForService(
+        LOCK_UUID,
+        CHAR,
+        encodedCommand
+      );
+      fetchDoorData(connectedDevice);
+      console.log(
+        "Lock state sent successfully:",
+        isLocked ? "Locked" : "Unlocked"
+      );
+    } catch (error) {
+      console.error("Failed to write to characteristic:", error);
+    }
+  };
+
+/*   const fetchInitialState = async (device: Device) => {
+    try {
+      const characteristic = await device.readCharacteristicForService(
+        LOCK_UUID,
+        CHAR
+      );
+      const valueDecoded = base64.decode(characteristic.value);
+      const isLocked = valueDecoded === "01"; // Assuming "01" means locked
+      setInitialLockState(isLocked);
+    } catch (error) {
+      console.error("Failed to fetch initial lock state:", error);
+      setInitialLockState(false); // Default or handle error appropriately
+    }
+  }; */
+
   return {
     scanForPeripherals,
     requestPermissions,
@@ -274,6 +322,8 @@ const connectToDevice = async (device: Device) => {
     V3disconnectFromDevice,
     //monitorLockStatus,
     doorStatus,
+    writeLockState,
+    initialState
   };
 }
 

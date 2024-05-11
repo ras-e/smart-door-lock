@@ -6,6 +6,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
 import DeviceModal from "./components/DeviceModal";
 import useBLE from "./components/useBLE2";
@@ -19,37 +20,37 @@ export default function App() {
     V3disconnectFromDevice,
     allDevices,
     connectedDevice,
+    doorStatus,
+    writeLockState,
   } = useBLE();
 
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [hasValidStatus, setHasValidStatus] = useState<boolean>(false);
 
   useEffect(() => {
     if (connectedDevice) {
       console.log("Device connected with ID: ", connectedDevice.id);
+      setIsLoading(true); // Remain in loading state until valid status is confirmed
     } else {
       console.log("No device is connected.");
+      setIsLoading(false);
+      setHasValidStatus(false);
     }
   }, [connectedDevice]);
 
   useEffect(() => {
-    console.log("Connected Device Changed:", connectedDevice?.id);
-    setIsLoading(false); // Stop loading indicator when device state changes
-    if (connectedDevice) {
-      setIsModalVisible(false); // Ensure modal is closed when a device is connected
+    console.log("CONNECTED DEVICE STATUS CHANGED:", connectedDevice?.name);
+    if (
+      connectedDevice &&
+      (doorStatus === "Locked" || doorStatus === "Unlocked")
+    ) {
+      setIsLoading(false);
+      setHasValidStatus(true);
     }
-  }, [connectedDevice]);
+  }, [connectedDevice, doorStatus]);
 
-  const hideModal = () => {
-    setIsModalVisible(false);
-  };
-
-  /*   const openModal = async () => {
-    await requestPermissions();
-    scanForPeripherals();
-    setIsModalVisible(true);
-  };
- */
+  const hideModal = () => setIsModalVisible(false);
 
   const openModal = async () => {
     setIsLoading(true);
@@ -62,28 +63,29 @@ export default function App() {
         "Permission Error",
         "Bluetooth permissions are required to connect devices."
       );
+      setIsLoading(false); // Ensure to stop loading on permission error
     }
-    setIsLoading(false);
   };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.TitleWrapper}>
-        {connectedDevice ? (
+        {connectedDevice && hasValidStatus ? (
           <>
             <Text style={styles.TitleText}>The door status is</Text>
-            <Text style={styles.statusText}>Status</Text>
-            <SafeAreaView
-              style={{
-                flex: 1,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <LockButton />
-            </SafeAreaView>
+            <Text style={styles.statusText}>{doorStatus}</Text>
+            <LockButton
+              writeLockState={writeLockState}
+              initialState={doorStatus === "Locked"}
+            />
           </>
         ) : (
-          <Text style={styles.TitleText}>Please Connect to a Smart lock</Text>
+          <>
+            <Text style={styles.TitleText}>
+              {isLoading ? "Loading..." : "Please Connect to a Smart Lock"}
+            </Text>
+            {isLoading && <ActivityIndicator size="large" color="#FFF" />}
+          </>
         )}
       </View>
 
@@ -149,7 +151,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 8,
   },
-
   ctaButtonText: {
     fontSize: 18,
     fontWeight: "bold",
