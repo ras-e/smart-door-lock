@@ -99,12 +99,15 @@ class MyCallbacks: public BLECharacteristicCallbacks {
                 }
                 // Schedule immediate state transition for demonstration purposes
                 // Real implementation might involve asynchronous operations
-            } else if (value == "Reset") {
-              state = RESET;
-              changeColor();
-              delay(1000);
-              pServer->disconnect(pServer->getConnId());
-            }
+             } else if (value == "Reset") {
+            state = RESET;
+            changeColor();
+            delay(1000); // Simulate delay for reset
+            state = LOCKED;
+            changeColor();
+            pCharacteristic->setValue("Locked"); // Update characteristic to reflect locked state
+            Serial.println("System reset and locked.");
+             }
             else {
                 commandInProgress = false; // No valid command for current state
                 Serial.println("Invalid command for current state.");
@@ -208,7 +211,7 @@ void loop() {
       oldDeviceConnected = deviceConnected;
       Serial.println("Start advertising");
       if (state == RESET) {
-        state == LOCKED;
+        state = LOCKED;
         changeColor();
       }
   }
