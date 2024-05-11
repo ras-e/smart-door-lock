@@ -35,6 +35,8 @@ bool deviceConnected = false;
 bool oldDeviceConnected = false;
 unsigned long commandStartTime = 0;
 bool commandInProgress = false;
+bool isAuthenticated = false;  // Global flag to track authentication status
+
 
 
 // Function to control LED brightness
@@ -47,14 +49,27 @@ void ledcAnalogWrite(uint8_t channel, uint32_t value, uint32_t valueMax = 255) {
 class MyCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
         std::string value = pCharacteristic->getValue();
+
         if (value.length() > 0) {
             Serial.print("Received Value: ");
             Serial.println(value.c_str());
+
+            // Handle password authentication
+            if (value == "password123") {  // Assuming 'password123' is the required password
+                isAuthenticated = true;
+                pCharacteristic->setValue("Authenticated");
+                Serial.println("Authenticated successfully.");
+                return; // Exit early after authentication
+            }
+
+            if (!isAuthenticated) {
+                Serial.println("Not authenticated: Ignoring command.");
+                return; // Ignore further processing if not authenticated
+            }
+
             Serial.print("Current State: ");
             Serial.println(state);
-            
-            // Start command processing timer
-            commandStartTime = millis();
+            commandStartTime = millis(); // Start command processing timer
             commandInProgress = true;
 
             if ((value == "Unlocked" && state == LOCKED) || (value == "Locked" && state == OPEN)) {
@@ -63,8 +78,7 @@ class MyCallbacks: public BLECharacteristicCallbacks {
                 } else if (value == "Locked" && state == OPEN) {
                     state = LOCKING;
                 }
-                // Schedule immediate state transition for demonstration purposes
-                // Real implementation might involve asynchronous operations
+                // Schedule immediate state transition
                 ledcAnalogWrite(LEDC_CHANNEL_RED, (state == OPENING) ? 255 : 0);
                 ledcAnalogWrite(LEDC_CHANNEL_GREEN, 0);
                 ledcAnalogWrite(LEDC_CHANNEL_BLUE, (state == LOCKING) ? 255 : 0);
@@ -78,6 +92,7 @@ class MyCallbacks: public BLECharacteristicCallbacks {
 };
 
 
+
 // Callback class for BLE server
 class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) override {
@@ -87,9 +102,11 @@ class MyServerCallbacks: public BLEServerCallbacks {
 
     void onDisconnect(BLEServer* pServer) override {
         Serial.println("Client Disconnected");
+        isAuthenticated = false;  // Reset authentication status
         deviceConnected = false;
     }
 };
+
 
 void setup() {
     Serial.begin(115200);
@@ -159,4 +176,3 @@ void loop() {
         Serial.println("Device Connected");
     }
 }
-
