@@ -130,6 +130,11 @@ void setup() {
                                         BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
     pHeartbeatCharacteristic->setValue("0");  // Initial value
 
+   // Set the initial characteristic value based on the lock's state
+    String initialState = (state == LOCKED) ? "Locked" : "Unlocked";
+    pCharacteristic->setValue(initialState.c_str());
+    pCharacteristic->setCallbacks(new MyCallbacks());
+
     pService->start();
     BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
     pAdvertising->addServiceUUID(SERVICE_UUID);
