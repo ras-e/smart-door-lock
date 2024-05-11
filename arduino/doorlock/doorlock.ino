@@ -32,9 +32,6 @@ BLEServer* pServer = NULL;
 #define LEDC_CHANNEL_GREEN 2
 #define LEDC_CHANNEL_BLUE  3
 
-//std::string userInput = "";
-//std::string lastUserInput = "";
-
 enum State {
   LOCKED,
   OPENING,
@@ -86,13 +83,12 @@ class MyCallbacks: public BLECharacteristicCallbacks {
                 changeColor();
 
                 //Tries to unlock
-                long long startTime = millis();
-                long long endTime = millis();
-                long long delay = endTime - startTime;
+                long startTime = millis();
+                long endTime = millis();
+                int delay = endTime - startTime;
                 while (state != OPEN && delay < 10000) {
                   endTime = millis();
-                  if (delay > 0) {
-                    // Transition to OPEN after some time or immediately for demonstration
+                  if (delay > 10000) {
                     state = OPEN;
                     changeColor();
                   }
@@ -142,10 +138,7 @@ void setup() {
   ledcSetup(LEDC_CHANNEL_BLUE, LEDC_BASE_FREQ, LEDC_TIMER_12_BIT);
   ledcAttachPin(BLUE_PIN, LEDC_CHANNEL_BLUE);
 
-  // Initialize LEDs to off state using PWM
-  ledcAnalogWrite(LEDC_CHANNEL_RED, 0);
-  ledcAnalogWrite(LEDC_CHANNEL_GREEN, 0);
-  ledcAnalogWrite(LEDC_CHANNEL_BLUE, 0);
+  changeColor();
 
   BLEDevice::init("HVAD SAA MAAAAAND");
   pServer = BLEDevice::createServer();
