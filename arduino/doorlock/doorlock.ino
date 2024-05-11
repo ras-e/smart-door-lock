@@ -8,9 +8,6 @@
 #include <BLEUtils.h>
 #include <BLEServer.h>
 
-// See the following for generating UUIDs:
-// https://www.uuidgenerator.net/
-
 // UUIDs for the BLE service and characteristic
 #define SERVICE_UUID        "6f340e06-add8-495c-9da4-ce8558771834"
 #define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
@@ -50,23 +47,23 @@ void ledcAnalogWrite(uint8_t channel, uint32_t value, uint32_t valueMax = 255) {
 
 void changeColor() {
   if (state == OPEN) {
-    ledcAnalogWrite(LEDC_CHANNEL_RED, 255);
-    ledcAnalogWrite(LEDC_CHANNEL_GREEN, 0);
-    ledcAnalogWrite(LEDC_CHANNEL_BLUE, 0);
+    digitalWrite(RED_PIN, HIGH); // OFF
+    digitalWrite(GREEN_PIN, LOW); // ON
+    digitalWrite(BLUE_PIN, HIGH); // OFF
     Serial.println("Transitioned to OPEN state.");
   } else if (state == OPENING || state == LOCKING) {
-    ledcAnalogWrite(LEDC_CHANNEL_RED, 150);
-    ledcAnalogWrite(LEDC_CHANNEL_GREEN, 200);
-    ledcAnalogWrite(LEDC_CHANNEL_BLUE, 0);
+    digitalWrite(RED_PIN, LOW); // ON
+    digitalWrite(GREEN_PIN, LOW); // ON
+    digitalWrite(BLUE_PIN, HIGH); // OFF
   } else if (state == LOCKED) {
-    ledcAnalogWrite(LEDC_CHANNEL_RED, 0);
-    ledcAnalogWrite(LEDC_CHANNEL_GREEN, 0);
-    ledcAnalogWrite(LEDC_CHANNEL_BLUE, 0);
+    digitalWrite(RED_PIN, LOW);  // ON
+    digitalWrite(GREEN_PIN, HIGH); // OFF
+    digitalWrite(BLUE_PIN, HIGH); // OFF
     Serial.println("Transitioned to LOCKED state.");
   } else if (state = RESET) {
-    ledcAnalogWrite(LEDC_CHANNEL_RED, 200);
-    ledcAnalogWrite(LEDC_CHANNEL_GREEN, 100);
-    ledcAnalogWrite(LEDC_CHANNEL_BLUE, 200);
+  digitalWrite(RED_PIN, HIGH); // OFF
+    digitalWrite(GREEN_PIN, HIGH); // OFF
+    digitalWrite(BLUE_PIN, LOW); // ON
     Serial.println("Transitioned to RESET state.");
   }
 }
@@ -103,7 +100,7 @@ class MyCallbacks: public BLECharacteristicCallbacks {
             } else if (value == "Reset") {
               state = RESET;
               changeColor();
-              delay(3000);
+              delay(1000);
               pServer->disconnect(pServer->getConnId());
             }
             else {
@@ -132,13 +129,9 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Starting BLE work!");
 
-  // Set up PWM for each color
-  ledcSetup(LEDC_CHANNEL_RED, LEDC_BASE_FREQ, LEDC_TIMER_12_BIT);
-  ledcAttachPin(RED_PIN, LEDC_CHANNEL_RED);
-  ledcSetup(LEDC_CHANNEL_GREEN, LEDC_BASE_FREQ, LEDC_TIMER_12_BIT);
-  ledcAttachPin(GREEN_PIN, LEDC_CHANNEL_GREEN);
-  ledcSetup(LEDC_CHANNEL_BLUE, LEDC_BASE_FREQ, LEDC_TIMER_12_BIT);
-  ledcAttachPin(BLUE_PIN, LEDC_CHANNEL_BLUE);
+  pinMode(RED_PIN, OUTPUT);
+  pinMode(GREEN_PIN, OUTPUT);
+  pinMode(BLUE_PIN, OUTPUT);
 
   changeColor();
 
@@ -164,7 +157,7 @@ void setup() {
 
 void loop() {
   if (commandInProgress) {
-    //delay(11000); delay for testing
+    //delay(11000); //delay for testing
     unsigned long currentTime = millis();
     if (currentTime - commandStartTime > 10000) { // 10 seconds timeout
         // Command timeout
@@ -188,7 +181,7 @@ void loop() {
       oldDeviceConnected = deviceConnected;
       Serial.println("Start advertising");
       if (state == RESET) {
-        state == LOCKED;
+        state = LOCKED;
         changeColor();
       }
   }
