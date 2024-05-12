@@ -36,8 +36,8 @@ function useBLE(): BluetoothLowEnergyApi {
   // UUID's for CUSTOM UUID 0000181C-0000-1000-8000-00805F9B34FB
 
 /*   const LOCK_UUID = "0000180D-0000-1000-8000-00805F9B34FB";
-  const CHAR = "00002A38-0000-1000-8000-00805F9B34FB"; */
-
+  const CHAR = "00002A38-0000-1000-8000-00805F9B34FB";
+ */
   
     //-- Our Smart Lock Door UUID's
   const LOCK_UUID = "6f340e06-add8-495c-9da4-ce8558771834";
@@ -197,7 +197,7 @@ function useBLE(): BluetoothLowEnergyApi {
 
             console.log("Attempting to reconnect...");
             setDoorStatus("Attempting to reconnect...");
-            await delay(2000); // Wait for 5 seconds before reconnecting
+            await delay(5000); // Wait for 5 seconds before reconnecting
             connectToDevice(device);
           }
         }
