@@ -42,15 +42,18 @@ export default function App() {
   useEffect(() => {
     console.log("CONNECTED DEVICE STATUS CHANGED:", connectedDevice?.name);
     if (
-      connectedDevice &&
-      (doorStatus === "Locked" || doorStatus === "Unlocked")
+      connectedDevice 
+      // && (doorStatus === "Locked" || doorStatus === "Unlocked" || "")
     ) {
       setIsLoading(false);
       setHasValidStatus(true);
     }
   }, [connectedDevice, doorStatus]);
 
-  const hideModal = () => setIsModalVisible(false);
+  const hideModal = () => {
+    setIsModalVisible(false);
+    setIsLoading(false);
+  }
 
   const openModal = async () => {
     setIsLoading(true);

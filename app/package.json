@@ -7,7 +7,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "dev-client": "expo start --dev-client"
+    "dev-client": "expo start --dev-client",
+    "eas-dev-build": "eas build --profile development --platform android"
   },
   "dependencies": {
     "eas-cli": "^7.6.2",
