@@ -31,7 +31,7 @@ function useBLE(): BluetoothLowEnergyApi {
   //const bleManager = useMemo(() => new BleManager(), []);
 
   //Device name, e.g., Smart Lock
-  const deviceName = "";
+  const deviceName = "Smart lock group 15";
 
   // UUID's for CUSTOM UUID 0000181C-0000-1000-8000-00805F9B34FB
 
@@ -201,7 +201,7 @@ function useBLE(): BluetoothLowEnergyApi {
             connectToDevice(device);
           }
         }
-      }, 10000);
+      }, 1000);
     } catch (e) {
       console.error("Failed to connect:", e);
       setConnectedDevice(null); // Ensure the state is cleared on connection failure
