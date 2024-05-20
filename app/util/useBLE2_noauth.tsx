@@ -7,8 +7,7 @@ import {
   Device,
 } from "react-native-ble-plx";
 import base64 from "react-native-base64";
-import { ble_manager } from "./ble_manager";
-import * as ExpoDevice from "expo-device";
+import { ble_manager } from "../components/ble_manager";
 
 interface BluetoothLowEnergyApi {
   requestPermissions(): Promise<boolean>;
@@ -21,17 +20,13 @@ interface BluetoothLowEnergyApi {
   writeLockState(isLocked: boolean): void;
   initialState: Boolean;
 
-  //setDoorState: (openDoor: boolean) => void;
-
-  // monitorLockStatus(): void;
 }
 
 function useBLE(): BluetoothLowEnergyApi {
   const bleManager = ble_manager;
-  //const bleManager = useMemo(() => new BleManager(), []);
 
   //Device name, e.g., Smart Lock
-  const deviceName = "Smart lock group 15";
+  const deviceName = "";
 
   // UUID's for CUSTOM UUID 0000181C-0000-1000-8000-00805F9B34FB
 
@@ -231,11 +226,6 @@ function useBLE(): BluetoothLowEnergyApi {
     const rawData = base64.decode(characteristic.value);
     console.log("Received data:", rawData);
 
-    //const doorIsOpen = rawData.charCodeAt(0) == 0x01;
-
-    //const isLocked = rawData === "Locked";
-
-    //const isLocked = rawData === "Locked";
     //Determine if the lock is in the "Locked" state
     const isLocked = rawData === "Locked"; // 
 
@@ -298,21 +288,6 @@ function useBLE(): BluetoothLowEnergyApi {
     }
   };
 
-/*   const fetchInitialState = async (device: Device) => {
-    try {
-      const characteristic = await device.readCharacteristicForService(
-        LOCK_UUID,
-        CHAR
-      );
-      const valueDecoded = base64.decode(characteristic.value);
-      const isLocked = valueDecoded === "01"; // Assuming "01" means locked
-      setInitialLockState(isLocked);
-    } catch (error) {
-      console.error("Failed to fetch initial lock state:", error);
-      setInitialLockState(false); // Default or handle error appropriately
-    }
-  }; */
-
   return {
     scanForPeripherals,
     requestPermissions,
@@ -320,7 +295,6 @@ function useBLE(): BluetoothLowEnergyApi {
     allDevices,
     connectedDevice,
     V3disconnectFromDevice,
-    //monitorLockStatus,
     doorStatus,
     writeLockState,
     initialState
