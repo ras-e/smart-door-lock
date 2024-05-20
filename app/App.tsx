@@ -9,8 +9,10 @@ import {
   ActivityIndicator,
 } from "react-native";
 import DeviceModal from "./components/DeviceModal";
-import useBLE from "./components/useBLE2";
+import useBLE from "./components/useBLE";
 import LockButton from "./components/LockButton";
+import PasswordModal from "./components/PasswordModal"; // Import PasswordModal
+import { Device } from "react-native-ble-plx";
 
 export default function App() {
   const {
@@ -25,13 +27,17 @@ export default function App() {
   } = useBLE();
 
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
+  const [isPasswordModalVisible, setIsPasswordModalVisible] =
+    useState<boolean>(false); // Password modal state
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [hasValidStatus, setHasValidStatus] = useState<boolean>(false);
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null); // State to hold selected device
 
   useEffect(() => {
     if (connectedDevice) {
       console.log("Device connected with ID: ", connectedDevice.id);
-      setIsLoading(true); // Remain in loading state until valid status is confirmed
+      setIsLoading(true);
+      setIsPasswordModalVisible(true); // Show password modal when a device is connected
     } else {
       console.log("No device is connected.");
       setIsLoading(false);
@@ -41,10 +47,7 @@ export default function App() {
 
   useEffect(() => {
     console.log("CONNECTED DEVICE STATUS CHANGED:", connectedDevice?.name);
-    if (
-      connectedDevice 
-      // && (doorStatus === "Locked" || doorStatus === "Unlocked" || "")
-    ) {
+    if (connectedDevice) {
       setIsLoading(false);
       setHasValidStatus(true);
     }
@@ -53,7 +56,7 @@ export default function App() {
   const hideModal = () => {
     setIsModalVisible(false);
     setIsLoading(false);
-  }
+  };
 
   const openModal = async () => {
     setIsLoading(true);
@@ -66,8 +69,21 @@ export default function App() {
         "Permission Error",
         "Bluetooth permissions are required to connect devices."
       );
-      setIsLoading(false); // Ensure to stop loading on permission error
+      setIsLoading(false);
     }
+  };
+
+  const handleAuthenticate = async (password: string) => {
+    if (selectedDevice) {
+      await connectToDevice(selectedDevice, password);
+      setIsPasswordModalVisible(false);
+    }
+  };
+
+  const handleDeviceSelection = async (device: Device) => {
+    setSelectedDevice(device);
+    setIsModalVisible(false);
+    setIsPasswordModalVisible(true); // Show password modal for selected device
   };
 
   return (
@@ -106,9 +122,16 @@ export default function App() {
       <DeviceModal
         closeModal={hideModal}
         visible={isModalVisible}
-        connectToPeripheral={connectToDevice}
+        connectToPeripheral={handleDeviceSelection} // Updated to handle device selection
         devices={allDevices}
       />
+
+      <PasswordModal
+        visible={isPasswordModalVisible}
+        onAuthenticate={handleAuthenticate}
+        onClose={() => setIsPasswordModalVisible(false)}
+      />
+      
     </SafeAreaView>
   );
 }
