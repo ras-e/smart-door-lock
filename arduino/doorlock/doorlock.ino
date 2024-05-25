@@ -1,6 +1,9 @@
 #include <BLEDevice.h>
 #include <BLEUtils.h>
 #include <BLEServer.h>
+#include <Arduino.h>
+#include <PubSubClient.h>
+#include <WiFi.h>
 
 // Constants for the LED control
 #define LEDC_BASE_FREQ     5000       // PWM base frequency
@@ -42,6 +45,25 @@ unsigned long commandStartTime = 0;
 bool commandInProgress = false;
 unsigned long lastHeartbeatMillis = 0;
 const long heartbeatInterval = 10000; // Update the heartbeat every 10 second
+
+//setup wifi and mqtt
+WiFiClient espClient;
+PubSubClient client(espClient);
+long lastMsg = 0;
+char msg[50];
+int value = 0;
+
+const char* ssid = "O S 1019";
+const char* password = "Sigrid1234";
+
+// Add your MQTT Broker IP address, example:
+//const char* mqtt_server = "192.168.1.144";
+const char* mqtt_server = "broker.hivemq.com";
+int        port     = 1883;
+const char topic[]  = "kanon_topic_123";
+const long interval = 8000;
+unsigned long previousMillis = 0;
+
 
 
 // Function to control LED brightness
@@ -133,11 +155,14 @@ class MyServerCallbacks: public BLEServerCallbacks {
 void setup() {
     Serial.begin(115200);
     Serial.println("Starting BLE work!");
-
-      pinMode(RED_PIN, OUTPUT);
+  while (!Serial) {
+    ; 
+  }
+  setup_wifi();
+  client.setServer(mqtt_server, port);
+  pinMode(RED_PIN, OUTPUT);
   pinMode(GREEN_PIN, OUTPUT);
   pinMode(BLUE_PIN, OUTPUT);
-
   changeColor();
 
     BLEDevice::init("Smart lock group 15");
@@ -170,7 +195,30 @@ void setup() {
     BLEDevice::startAdvertising();
     Serial.println("Characteristic defined! Now you can read it in your phone!");
 }
+void setup_wifi() {
+  delay(10);
+  WiFi.begin(ssid, password);
 
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+}
+
+void reconnect() {
+  // Loop until we're reconnected
+  while (!client.connected()) {
+    // Attempt to connect
+    if (client.connect("OLIVERMEGAUNIKIDCLIENTLULE")) {
+      // Subscribe
+      client.subscribe(topic);
+    } else {
+      Serial.print(client.state());
+      Serial.println(" try again in 5 seconds");
+      // Wait 5 seconds before retrying
+      delay(5000);
+    }
+  }
+}
 
 
 void loop() {
@@ -191,6 +239,16 @@ void loop() {
         Serial.println(state == OPEN ? "OPEN" : "LOCKED");
         changeColor();
     }
+  }
+  if (!client.connected()) {
+    reconnect();
+  }
+  client.loop();
+
+  long now = millis();
+  if (now - lastMsg > 5000) {
+    lastMsg = now;
+    client.publish(topic, "HB");
   }
 
     unsigned long currentMillis = millis();
