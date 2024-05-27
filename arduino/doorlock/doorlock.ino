@@ -10,6 +10,7 @@
 #define SERVICE_UUID        "6f340e06-add8-495c-9da4-ce8558771834"
 #define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
 #define HEARTBEAT_UUID "12345678-90ab-cdef-1234-567890abcdef"
+#define AUTH_UUID "1e4bae79-843f-4bd6-b6ca-b4c99188cfca"
 
 // GPIO pins for the RGB LED
 #define RED_PIN   27
@@ -24,6 +25,7 @@
 BLECharacteristic* pCharacteristic = NULL;
 BLEServer* pServer = NULL;
 BLECharacteristic* pHeartbeatCharacteristic = NULL;
+BLECharacteristic* pAuthCharacteristic = NULL;
 
 enum State {
   LOCKED,
@@ -73,51 +75,57 @@ void changeColor() {
   }
 }
 
+class AuthCallbacks: public BLECharacteristicCallbacks {
+  void onWrite(BLECharacteristic *pAuthCharacteristic) {
+    std::string value = pAuthCharacteristic->getValue();
+    if (value.length() > 0) {
+      Serial.print("Received Value: ");
+      Serial.println(value.c_str());
+
+      // Handle password authentication
+      if (value == "123") {  // Assuming '123' is the required password
+          isAuthenticated = true;
+          pAuthCharacteristic->setValue("Authenticated");
+          Serial.println("Authenticated successfully.");
+          return; // Exit early after authentication
+      }
+
+      if (!isAuthenticated) {
+          Serial.println("Not authenticated: Ignoring command.");
+          return; // Ignore further processing if not authenticated
+      }
+    }
+  }
+};
+
 // Callback class for BLE characteristic
 class MyCallbacks: public BLECharacteristicCallbacks {
-    void onWrite(BLECharacteristic *pCharacteristic) {
-        std::string value = pCharacteristic->getValue();
+  void onWrite(BLECharacteristic *pCharacteristic) {
+    if (isAuthenticated) {  
+      std::string value = pCharacteristic->getValue();
+      Serial.print("Current State: ");
+      Serial.println(state);
+      commandStartTime = millis(); // Start command processing timer
+      commandInProgress = true;
 
-        if (value.length() > 0) {
-            Serial.print("Received Value: ");
-            Serial.println(value.c_str());
-
-            // Handle password authentication
-            if (value == "password123") {  // Assuming 'password123' is the required password
-                isAuthenticated = true;
-                pCharacteristic->setValue("Authenticated");
-                Serial.println("Authenticated successfully.");
-                return; // Exit early after authentication
-            }
-
-            if (!isAuthenticated) {
-                Serial.println("Not authenticated: Ignoring command.");
-                return; // Ignore further processing if not authenticated
-            }
-
-            Serial.print("Current State: ");
-            Serial.println(state);
-            commandStartTime = millis(); // Start command processing timer
-            commandInProgress = true;
-
-            if ((value == "Unlocked" && state == LOCKED) || (value == "Locked" && state == OPEN)) {
-                if (value == "Unlocked" && state == LOCKED) {
-                    state = OPENING;
-                } else if (value == "Locked" && state == OPEN) {
-                    state = LOCKING;
-                }
-                changeColor();
-            } else if (value == "Reset") {
-              state = RESET;
-              changeColor();
-              delay(1000);
-              pServer->disconnect(pServer->getConnId());
-            } else {
-                commandInProgress = false; // No valid command for current state
-                Serial.println("Invalid command for current state.");
-            }
-        }
+      if ((value == "Unlocked" && state == LOCKED) || (value == "Locked" && state == OPEN)) {
+          if (value == "Unlocked" && state == LOCKED) {
+              state = OPENING;
+          } else if (value == "Locked" && state == OPEN) {
+              state = LOCKING;
+          }
+          changeColor();
+      } else if (value == "Reset") {
+        state = RESET;
+        changeColor();
+        delay(1000);
+        pServer->disconnect(pServer->getConnId());
+      } else {
+          commandInProgress = false; // No valid command for current state
+          Serial.println("Invalid command for current state.");
+      }
     }
+  }
 };
 
 
@@ -132,6 +140,7 @@ class MyServerCallbacks: public BLEServerCallbacks {
     void onDisconnect(BLEServer* pServer) override {
         Serial.println("Client Disconnected");
         isAuthenticated = false;  // Reset authentication status
+        pAuthCharacteristic->setValue("Not Authenticated");
         deviceConnected = false;
     }
 };
@@ -163,6 +172,13 @@ void setup() {
                                         HEARTBEAT_UUID,
                                         BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
   pHeartbeatCharacteristic->setValue("0");  // Initial value
+
+  pAuthCharacteristic = pService->createCharacteristic(
+                                        AUTH_UUID,
+                                        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+  pAuthCharacteristic->setValue("Not Authenticated");  // Initial value
+  pAuthCharacteristic->setCallbacks(new AuthCallbacks());
+
 
   // Set the initial characteristic value based on the lock's state
   String initialState = (state == LOCKED) ? "Locked" : "Unlocked";
