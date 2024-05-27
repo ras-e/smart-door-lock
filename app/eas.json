@@ -1,15 +1,40 @@
 {
+  "cli": {
+    "version": ">=1.0.0"
+  },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal"
     },
     "preview": {
-       "ios": {
-        "simulator": true
-      },
       "distribution": "internal"
     },
     "production": {}
   }
 }
+
+
+/* {
+  "cli": {
+    "version": ">=1.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "buildConfiguration": "Release"
+      }
+    }
+  }
+} */

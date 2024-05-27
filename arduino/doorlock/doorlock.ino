@@ -12,6 +12,7 @@
 #define HEARTBEAT_UUID "12345678-90ab-cdef-1234-567890abcdef"
 #define AUTH_UUID "1e4bae79-843f-4bd6-b6ca-b4c99188cfca"
 
+
 // GPIO pins for the RGB LED
 #define RED_PIN   27
 #define GREEN_PIN 26
@@ -25,6 +26,7 @@
 BLECharacteristic* pCharacteristic = NULL;
 BLEServer* pServer = NULL;
 BLECharacteristic* pHeartbeatCharacteristic = NULL;
+
 BLECharacteristic* pAuthCharacteristic = NULL;
 
 enum State {
@@ -153,8 +155,6 @@ void setup() {
   pinMode(RED_PIN, OUTPUT);
   pinMode(GREEN_PIN, OUTPUT);
   pinMode(BLUE_PIN, OUTPUT);
-
-  changeColor();
 
   BLEDevice::init("Smart lock group 15");
   pServer = BLEDevice::createServer();

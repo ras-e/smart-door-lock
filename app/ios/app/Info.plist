@@ -52,6 +52,8 @@
     <string>Allow $(PRODUCT_NAME) to connect to bluetooth devices</string>
     <key>UIBackgroundModes</key>
     <array>
+      <string>peripheral</string>
+      <string>central</string>
       <string>bluetooth-central</string>
       <string>bluetooth-peripheral</string>
     </array>
