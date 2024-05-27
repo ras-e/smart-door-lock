@@ -11,7 +11,7 @@ import {
 import DeviceModal from "./components/DeviceModal";
 import useBLE from "./components/useBLE";
 import LockButton from "./components/LockButton";
-import PasswordModal from "./components/PasswordModal"; // Import PasswordModal
+import PasswordModal from "./components/PasswordModal";
 import { Device } from "react-native-ble-plx";
 
 export default function App() {
@@ -131,7 +131,6 @@ export default function App() {
         onAuthenticate={handleAuthenticate}
         onClose={() => setIsPasswordModalVisible(false)}
       />
-      
     </SafeAreaView>
   );
 }

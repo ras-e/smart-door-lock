@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert, PermissionsAndroid, Platform } from "react-native";
 import {
   BleError,
@@ -20,6 +20,7 @@ interface BluetoothLowEnergyApi {
   writeLockState(isLocked: boolean): void;
   initialState: boolean;
   authenticate: (password: string) => Promise<boolean>;
+  //timer: number;
 }
 
 function useBLE(): BluetoothLowEnergyApi {
@@ -28,12 +29,15 @@ function useBLE(): BluetoothLowEnergyApi {
 
   const LOCK_UUID = "6f340e06-add8-495c-9da4-ce8558771834";
   const CHAR = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+  //const HEARTBEAT_UUID = "12345678-90ab-cdef-1234-567890abcdef";
+  const AUTHZ_UUID = "1e4bae79-843f-4bd6-b6ca-b4c99188cfca";
 
   const [allDevices, setAllDevices] = useState<Device[]>([]);
   const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
   const [doorStatus, setDoorStatus] = useState<string>("Unknown");
   const [initialState, setInitialState] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  //const [timer, setTime] = useState<number>(0);
 
   const connectedDeviceRef = useRef<Device | null>(null);
 
@@ -202,12 +206,17 @@ function useBLE(): BluetoothLowEnergyApi {
 
     const isLocked = rawData === "Locked";
     setDoorStatus(isLocked ? "Locked" : "Unlocked");
+    //setTime(timer);
     setInitialState(isLocked);
   };
 
   const fetchDoorData = async (device: Device) => {
     if (device) {
-      let char = device.readCharacteristicForService(LOCK_UUID, CHAR);
+      let char = device.readCharacteristicForService(
+        LOCK_UUID,
+        CHAR,
+        //HEARTBEAT_UUID
+      );
       try {
         let c = await char;
         handleResponse(c);
@@ -248,7 +257,6 @@ function useBLE(): BluetoothLowEnergyApi {
         CHAR,
         encodedCommand
       );
-      fetchDoorData(connectedDevice);
       console.log(
         "Lock state sent successfully:",
         isLocked ? "Locked" : "Unlocked"
@@ -270,16 +278,16 @@ function useBLE(): BluetoothLowEnergyApi {
       console.log("write WITH PASSwORD");
       await connectedDeviceRef.current.writeCharacteristicWithResponseForService(
         LOCK_UUID,
-        CHAR,
+        AUTHZ_UUID,
         encodedPassword
       );
       console.log("Read with password first");
       const response =
         await connectedDeviceRef.current.readCharacteristicForService(
           LOCK_UUID,
-          CHAR
+          AUTHZ_UUID
         );
-
+      //fetchDoorData(connectedDeviceRef.current)
       if (response.value === null) {
         console.log("No response received for authentication.");
         return false;
@@ -314,6 +322,7 @@ function useBLE(): BluetoothLowEnergyApi {
     writeLockState,
     initialState,
     authenticate,
+    //timer,
   };
 }
 
