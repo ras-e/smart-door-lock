@@ -9,6 +9,7 @@
 // UUIDs for the BLE service and characteristic
 #define SERVICE_UUID        "6f340e06-add8-495c-9da4-ce8558771834"
 #define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+#define HEARTBEAT_UUID "12345678-90ab-cdef-1234-567890abcdef"
 
 // GPIO pins for the RGB LED
 #define RED_PIN   27
@@ -22,6 +23,7 @@
 
 BLECharacteristic* pCharacteristic = NULL;
 BLEServer* pServer = NULL;
+BLECharacteristic* pHeartbeatCharacteristic = NULL;
 
 enum State {
   LOCKED,
@@ -37,6 +39,8 @@ bool oldDeviceConnected = false;
 unsigned long commandStartTime = 0;
 bool commandInProgress = false;
 bool isAuthenticated = false;  // Global flag to track authentication status
+unsigned long lastHeartbeatMillis = 0;
+const long heartbeatInterval = 10000; // Update the heartbeat every 10 second
 
 
 
@@ -149,13 +153,21 @@ void setup() {
   BLEService *pService = pServer->createService(SERVICE_UUID);
   
   pCharacteristic = pService->createCharacteristic(
-                      CHARACTERISTIC_UUID,
-                      BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+                                        CHARACTERISTIC_UUID,
+                                        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
   pCharacteristic->setCallbacks(new MyCallbacks());
+  
+  pCharacteristic->setValue("Ready for commands");
 
-  // Set initial characteristic value based on lock state
-  const char* initialState = (state == LOCKED) ? "Locked" : "Unlocked";
-  pCharacteristic->setValue(initialState);
+  pHeartbeatCharacteristic = pService->createCharacteristic(
+                                        HEARTBEAT_UUID,
+                                        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  pHeartbeatCharacteristic->setValue("0");  // Initial value
+
+  // Set the initial characteristic value based on the lock's state
+  String initialState = (state == LOCKED) ? "Locked" : "Unlocked";
+  pCharacteristic->setValue(initialState.c_str());
+  pCharacteristic->setCallbacks(new MyCallbacks());
 
   pService->start();
   BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
@@ -188,12 +200,27 @@ void loop() {
     }
   }
 
+  unsigned long currentMillis = millis();
+  if (currentMillis - lastHeartbeatMillis >= heartbeatInterval) {
+      lastHeartbeatMillis = currentMillis;  // Reset the timer
+
+      // Update the heartbeat characteristic with the current uptime in milliseconds
+      String heartbeatValue = String(currentMillis);
+      pHeartbeatCharacteristic->setValue(heartbeatValue.c_str());
+      pHeartbeatCharacteristic->notify(); // Notify any connected client
+      Serial.println("Heartbeat sent: " + heartbeatValue + " ms");
+  }
+
   // Handle device connection and reconnection logic
   if (!deviceConnected && oldDeviceConnected) {
       delay(500); // Small delay to ensure stability
       pServer->startAdvertising(); // Restart advertising
       oldDeviceConnected = deviceConnected;
       Serial.println("Start advertising");
+      if (state == RESET) {
+        state = LOCKED;
+        changeColor();
+      }
   }
   if (deviceConnected && !oldDeviceConnected) {
       oldDeviceConnected = deviceConnected;
