@@ -24,6 +24,8 @@ export default function App() {
     connectedDevice,
     doorStatus,
     writeLockState,
+    heartbeatUnit,
+    heartbeatValue,
   } = useBLE();
 
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
@@ -93,6 +95,9 @@ export default function App() {
           <>
             <Text style={styles.TitleText}>The door status is</Text>
             <Text style={styles.statusText}>{doorStatus}</Text>
+            <Text style={styles.statusText}>
+              Smart Lock alive for: {heartbeatValue} + {heartbeatUnit}
+            </Text>
             <LockButton
               writeLockState={writeLockState}
               initialState={doorStatus === "Locked"}

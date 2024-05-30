@@ -21,6 +21,9 @@ interface BluetoothLowEnergyApi {
   initialState: boolean;
   authenticate: (password: string) => Promise<boolean>;
   //timer: number;
+
+  heartbeatValue: number;
+  heartbeatUnit: string;
 }
 
 function useBLE(): BluetoothLowEnergyApi {
@@ -29,7 +32,7 @@ function useBLE(): BluetoothLowEnergyApi {
 
   const LOCK_UUID = "6f340e06-add8-495c-9da4-ce8558771834";
   const CHAR = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
-  //const HEARTBEAT_UUID = "12345678-90ab-cdef-1234-567890abcdef";
+  const HEARTBEAT_UUID = "12345678-90ab-cdef-1234-567890abcdef";
   const AUTHZ_UUID = "1e4bae79-843f-4bd6-b6ca-b4c99188cfca";
 
   const [allDevices, setAllDevices] = useState<Device[]>([]);
@@ -37,7 +40,9 @@ function useBLE(): BluetoothLowEnergyApi {
   const [doorStatus, setDoorStatus] = useState<string>("Unknown");
   const [initialState, setInitialState] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  //const [timer, setTime] = useState<number>(0);
+
+  const [heartbeatValue, setHeartbeatValue] = useState<number>(0);
+  const [heartbeatUnit, setHeartbeatUnit] = useState<string>("seconds");
 
   const connectedDeviceRef = useRef<Device | null>(null);
 
@@ -151,6 +156,7 @@ function useBLE(): BluetoothLowEnergyApi {
       if (isAuthenticated) {
         console.log("Device authenticated successfully");
         fetchDoorData(deviceConnection); // Initial fetch after successful authentication
+        fetchHeartbeatData(deviceConnection); // Initial fetch for heartbeat
 
         // Set interval to check connection status and fetch data
         intervalHandle = setInterval(async () => {
@@ -160,6 +166,7 @@ function useBLE(): BluetoothLowEnergyApi {
             console.log("Fetching data...");
             if (connectedDeviceRef.current) {
               fetchDoorData(connectedDeviceRef.current); // Use the ref here
+              fetchHeartbeatData(connectedDeviceRef.current);
             }
           } else {
             console.log(
@@ -210,12 +217,60 @@ function useBLE(): BluetoothLowEnergyApi {
     setInitialState(isLocked);
   };
 
+  const fetchHeartbeatData = async (device: Device) => {
+    if (device) {
+      try {
+        let char = await device.readCharacteristicForService(
+          LOCK_UUID,
+          HEARTBEAT_UUID
+        );
+        if (char?.value) {
+          const rawData = base64.decode(char.value);
+          const heartbeatValueMs = parseInt(rawData, 10);
+          if (!isNaN(heartbeatValueMs)) {
+            handleHeartbeatValue(heartbeatValueMs);
+          } else {
+            console.log("Failed to parse heartbeat data");
+          }
+        } else {
+          console.log("No heartbeat data received");
+        }
+      } catch (e) {
+        handleBleError(e);
+      }
+    }
+  };
+
+  const handleHeartbeatValue = (milliseconds: number) => {
+    let displayValue: number;
+    let unit: string;
+
+    //const seconds = Math.floor(milliseconds / 1000);
+
+    const seconds = Math.floor(milliseconds / 1000);
+
+    if (seconds < 60) {
+      displayValue = seconds;
+      unit = "seconds";
+    } else if (seconds < 3600) {
+      const minutes = Math.floor(seconds / 60);
+      displayValue = minutes;
+      unit = "minutes";
+    } else {
+      const hours = Math.floor(seconds / 3600);
+      displayValue = hours;
+      unit = "hours";
+    }
+    console.log(`Heartbeat value: ${displayValue} ${unit}`);
+    setHeartbeatValue(displayValue);
+    setHeartbeatUnit(unit);
+  };
+
   const fetchDoorData = async (device: Device) => {
     if (device) {
       let char = device.readCharacteristicForService(
         LOCK_UUID,
-        CHAR,
-        //HEARTBEAT_UUID
+        CHAR
       );
       try {
         let c = await char;
@@ -287,7 +342,6 @@ function useBLE(): BluetoothLowEnergyApi {
           LOCK_UUID,
           AUTHZ_UUID
         );
-      //fetchDoorData(connectedDeviceRef.current)
       if (response.value === null) {
         console.log("No response received for authentication.");
         return false;
@@ -322,8 +376,12 @@ function useBLE(): BluetoothLowEnergyApi {
     writeLockState,
     initialState,
     authenticate,
-    //timer,
+    heartbeatValue,
+    heartbeatUnit,
   };
 }
 
 export default useBLE;
+function handleBleError(e: unknown) {
+  throw new Error("Function not implemented.");
+}
