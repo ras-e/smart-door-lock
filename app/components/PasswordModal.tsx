@@ -31,8 +31,11 @@ const PasswordModal: React.FC<PasswordModalProps> = ({
             value={password}
             onChangeText={setPassword}
           />
-          <Button title="Authenticate" onPress={handleAuthenticate} />
-          <Button title="Close" onPress={onClose} />
+          <View style={styles.buttonContainer}>
+            <Button title="Authenticate" onPress={handleAuthenticate} />
+            <View style={{ height: 10 }} /> 
+            <Button title="Close" onPress={onClose} />
+          </View>
         </View>
       </View>
     </Modal>
@@ -62,8 +65,12 @@ const styles = StyleSheet.create({
     padding: 10,
     borderColor: "gray",
     borderWidth: 1,
-    marginBottom: 10,
+    marginBottom: 20,
     borderRadius: 5,
+  },
+  buttonContainer: {
+    width: "100%",
+    alignItems: "center", // Aligns buttons to be centered
   },
 });
 

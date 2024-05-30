@@ -95,8 +95,9 @@ export default function App() {
           <>
             <Text style={styles.TitleText}>The door status is</Text>
             <Text style={styles.statusText}>{doorStatus}</Text>
+            <Text style={styles.TitleText}>Lock alive for: </Text>
             <Text style={styles.statusText}>
-              Smart Lock alive for: {heartbeatValue} + {heartbeatUnit}
+              {heartbeatValue} {heartbeatUnit}
             </Text>
             <LockButton
               writeLockState={writeLockState}
@@ -163,6 +164,14 @@ const styles = StyleSheet.create({
     marginTop: 15,
     color: "white",
   },
+
+  heartbeatText: {
+    fontSize: 25,
+    marginTop: 5,
+    color: "white",
+    marginBottom: 2,
+  },
+
   ctaButtonDisconnect: {
     backgroundColor: "#FF6060",
     justifyContent: "center",
