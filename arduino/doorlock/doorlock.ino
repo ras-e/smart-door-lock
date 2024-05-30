@@ -5,6 +5,7 @@
 // Constants for the LED control
 #define LEDC_BASE_FREQ     5000       // PWM base frequency
 #define LEDC_TIMER_12_BIT  12         // PWM resolution (12 bits)
+#define BOOT_PIN 0 // Boot button on GPIO0
 
 // UUIDs for the BLE service and characteristic
 #define SERVICE_UUID        "6f340e06-add8-495c-9da4-ce8558771834"
@@ -44,11 +45,32 @@ unsigned long lastHeartbeatMillis = 0;
 const long heartbeatInterval = 10000; // Update the heartbeat every 10 second
 
 
+bool resetRequested = false; // Flag to indicate if a reset is requested
+
+void resetDevice() {
+    resetRequested = true;
+}
+
+void handleReset() {
+    if (resetRequested) {
+        Serial.println("Resetting Device...");
+        state = RESET;
+        changeColor();
+        delay(1000); // Simulate delay for reset (consider alternatives to delay)
+        state = LOCKED;
+        changeColor();
+        pCharacteristic->setValue("Locked"); // Update characteristic to reflect locked state
+        Serial.println("System reset and locked.");
+        resetRequested = false; // Reset the flag
+    }
+}
+
 // Function to control LED brightness
 void ledcAnalogWrite(uint8_t channel, uint32_t value, uint32_t valueMax = 255) {
     uint32_t duty = (4095 / valueMax) * min(value, valueMax);
     ledcWrite(channel, duty);
 }
+
 
 
 void changeColor() {
@@ -57,16 +79,12 @@ void changeColor() {
     digitalWrite(GREEN_PIN, LOW); // ON
     digitalWrite(BLUE_PIN, HIGH); // OFF
     Serial.println("Transitioned to OPEN state.");
-  } else if (state == OPENING || state == LOCKING) {
-    digitalWrite(RED_PIN, LOW); // ON
-    digitalWrite(GREEN_PIN, LOW); // ON
-    digitalWrite(BLUE_PIN, HIGH); // OFF
-  } else if (state == LOCKED) {
+  }  else if (state == LOCKED) {
     digitalWrite(RED_PIN, LOW);  // ON
     digitalWrite(GREEN_PIN, HIGH); // OFF
     digitalWrite(BLUE_PIN, HIGH); // OFF
     Serial.println("Transitioned to LOCKED state.");
-  } else if (state = RESET) {
+  } else if (state == RESET) {
   digitalWrite(RED_PIN, HIGH); // OFF
     digitalWrite(GREEN_PIN, HIGH); // OFF
     digitalWrite(BLUE_PIN, LOW); // ON
@@ -137,6 +155,8 @@ void setup() {
       pinMode(RED_PIN, OUTPUT);
   pinMode(GREEN_PIN, OUTPUT);
   pinMode(BLUE_PIN, OUTPUT);
+  pinMode(BOOT_PIN, INPUT_PULLUP); // Set boot button as input with internal pull-up
+  
 
   changeColor();
 
@@ -192,6 +212,13 @@ void loop() {
         changeColor();
     }
   }
+
+     // Check if the button is pressed
+    if (digitalRead(BOOT_PIN) == LOW) {
+        resetDevice(); // Set the reset flag if the button is pressed
+    }
+    
+    handleReset(); // Check if a reset is requested
 
     unsigned long currentMillis = millis();
     if (currentMillis - lastHeartbeatMillis >= heartbeatInterval) {
