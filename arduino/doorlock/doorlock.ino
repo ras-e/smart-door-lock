@@ -11,6 +11,7 @@
 #define SERVICE_UUID        "6f340e06-add8-495c-9da4-ce8558771834"
 #define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
 #define HEARTBEAT_UUID "12345678-90ab-cdef-1234-567890abcdef"
+#define AUTH_UUID "1e4bae79-843f-4bd6-b6ca-b4c99188cfca"
 
 
 // GPIO pins for the RGB LED
@@ -26,6 +27,7 @@
 BLECharacteristic* pCharacteristic = NULL;
 BLEServer* pServer = NULL;
 BLECharacteristic* pHeartbeatCharacteristic = NULL;
+BLECharacteristic* pAuthCharacteristic = NULL;
 
 
 enum State {
@@ -41,6 +43,7 @@ bool deviceConnected = false;
 bool oldDeviceConnected = false;
 unsigned long commandStartTime = 0;
 bool commandInProgress = false;
+bool isAuthenticated = false;  // Global flag to track authentication status
 unsigned long lastHeartbeatMillis = 0;
 const long heartbeatInterval = 10000; // Update the heartbeat every 10 second
 
@@ -91,6 +94,29 @@ void changeColor() {
     Serial.println("Transitioned to RESET state.");
   }
 }
+
+class AuthCallbacks: public BLECharacteristicCallbacks {
+  void onWrite(BLECharacteristic *pAuthCharacteristic) {
+    std::string value = pAuthCharacteristic->getValue();
+    if (value.length() > 0) {
+      Serial.print("Received Value: ");
+      Serial.println(value.c_str());
+
+      // Handle password authentication
+      if (value == "123") {  // Assuming '123' is the required password
+          isAuthenticated = true;
+          pAuthCharacteristic->setValue("Authenticated");
+          Serial.println("Authenticated successfully.");
+          return; // Exit early after authentication
+      }
+
+      if (!isAuthenticated) {
+          Serial.println("Not authenticated: Ignoring command.");
+          return; // Ignore further processing if not authenticated
+      }
+    }
+  }
+};
 
 
 // Callback class for BLE characteristic
@@ -160,7 +186,7 @@ void setup() {
 
   changeColor();
 
-    BLEDevice::init("Smart lock group 15");
+    BLEDevice::init("Smart lock Heatbeat final");
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(new MyServerCallbacks());
     BLEService *pService = pServer->createService(SERVICE_UUID);
@@ -175,6 +201,12 @@ void setup() {
                                         HEARTBEAT_UUID,
                                         BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
     pHeartbeatCharacteristic->setValue("0");  // Initial value
+
+      pAuthCharacteristic = pService->createCharacteristic(
+                                        AUTH_UUID,
+                                        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+  pAuthCharacteristic->setValue("Not Authenticated");  // Initial value
+  pAuthCharacteristic->setCallbacks(new AuthCallbacks());
 
    // Set the initial characteristic value based on the lock's state
     String initialState = (state == LOCKED) ? "Locked" : "Unlocked";
