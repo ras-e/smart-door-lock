@@ -28,7 +28,7 @@ interface BluetoothLowEnergyApi {
 
 function useBLE(): BluetoothLowEnergyApi {
   const bleManager = ble_manager;
-  const deviceName = "";
+  const deviceName = "Smart lock";
 
   const LOCK_UUID = "6f340e06-add8-495c-9da4-ce8558771834";
   const CHAR = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
