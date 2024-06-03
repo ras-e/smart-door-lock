@@ -4,7 +4,7 @@ This project is on the 8th semester - on SDU Software Engineerieng Master 2024 -
 - Combination of the Software Technology of Internet of Things course
 - System Analysis & Verification
 
-The case has the following predefined case description, however the project development has extended the base requirements.
+The case has the following predefined case description, however the project development has extended the requirements.
 
 > Short Description: Design and implementation of a smart door lock with a high level of trustworthiness.
 
@@ -21,11 +21,9 @@ The case has the following predefined case description, however the project deve
 > The physical prototype can be build around the ESP32 platform with light emitting diodes as stand-ins for an electronically controlled lock. Such a platform will be handed out to > each student following the Software Technology of Internet of Things course.
 
 
-
 ## Authors
 * [Oliver Rise](https://github.com/OliverRise12)
 * [Patrick Andreasen](https://github.com/pandr20)
 * [Rasmus Enemark Jacobsen](https://github.com/ras-e)
 * [Tobias Solberg Pedersen](https://github.com/tobber00)
 
-**Supervisor**: Peter “Tank” Nellemann
