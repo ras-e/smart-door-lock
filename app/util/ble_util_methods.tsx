@@ -41,6 +41,8 @@ export async function logServiceDetails(
   }
 }
 
+
+
 /* export async function checkBluetoothEnabled() {
   try {
     const isEnabled = await bleManager.isBluetoothEnabled();
